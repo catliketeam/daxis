@@ -521,8 +521,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   frameGrid: {fileID: 1048888615}
-  fallingPiecePrefab: {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
+  fallingPiecePrefabs:
+  - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
+  - {fileID: 7949932603857005071, guid: ccbcf1adb26764e6493d0dbcfea61a30, type: 3}
   fallInterval: 1
+  softDropMultiplier: 0.2
 --- !u!4 &1407419148
 Transform:
   m_ObjectHideFlags: 0

@@ -658,7 +658,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4527621008183299283}
   m_Layer: 0
-  m_Name: Piece_X
+  m_Name: Piece_Asterisk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

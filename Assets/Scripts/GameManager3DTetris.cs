@@ -7,8 +7,11 @@ public class GameManager3DTetris : MonoBehaviour
     [Header("References & Settings")]
     [Tooltip("Reference to the FrameGridManager that defines the container dimensions.")]
     public FrameGridManager frameGrid;
-    [Tooltip("Prefab for the falling piece (its children should be the individual cubes).")]
-    public GameObject fallingPiecePrefab;
+
+    [Header("Piece Settings")]
+    [Tooltip("Array of falling piece prefabs. A random prefab is selected each time a new piece spawns.")]
+    public GameObject[] fallingPiecePrefabs;
+
     [Tooltip("Time (in seconds) between downward moves when not soft-dropping.")]
     public float fallInterval = 1f;
     [Tooltip("Multiplier to reduce the fall interval when soft-dropping (holding Down Arrow).")]
@@ -19,17 +22,17 @@ public class GameManager3DTetris : MonoBehaviour
     private int gridHeight;
     private int gridDepth;
     private float cubeSize;
-    // The grid stores a reference to the block (Transform) that occupies each cell.
+    // The grid stores a reference to the block (Transform) occupying each cell.
     private Transform[,,] grid;
 
     // The currently falling (user-controlled) piece.
     private GameObject currentPiece;
     private float fallTimer = 0f;
 
-    // List of locked groups. When a piece locks, its blocks remain grouped under one GameObject.
+    // List of locked groups. When a piece locks, its blocks remain grouped.
     private List<GameObject> lockedGroups = new List<GameObject>();
 
-    // While processing locked blocks (line clears and gravity), user input is disabled.
+    // Flag to disable user input while processing locked blocks.
     private bool processingLockedBlocks = false;
 
     void Start()
@@ -41,7 +44,7 @@ public class GameManager3DTetris : MonoBehaviour
         }
 
         cubeSize = frameGrid.cubeSize;
-        // Compute grid dimensions (assuming container dimensions are multiples of cubeSize).
+        // Compute grid dimensions (assuming container dimensions are exact multiples of cubeSize).
         gridWidth = Mathf.RoundToInt(frameGrid.containerWidth / cubeSize);
         gridDepth = Mathf.RoundToInt(frameGrid.containerDepth / cubeSize);
         gridHeight = Mathf.RoundToInt(frameGrid.containerHeight / cubeSize);
@@ -53,7 +56,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
-        // Do not process user input while locked blocks are being processed.
+        // Disable user input while processing locked blocks.
         if (processingLockedBlocks)
             return;
 
@@ -61,7 +64,7 @@ public class GameManager3DTetris : MonoBehaviour
         {
             HandleInput();
 
-            // Determine the effective fall interval (soft drop if Down Arrow is held).
+            // Determine effective fall interval (apply soft drop if Down Arrow is held).
             float effectiveFallInterval = fallInterval;
             if (Input.GetKey(KeyCode.DownArrow))
                 effectiveFallInterval = fallInterval * softDropMultiplier;
@@ -70,20 +73,22 @@ public class GameManager3DTetris : MonoBehaviour
             if (fallTimer >= effectiveFallInterval)
             {
                 fallTimer = 0f;
-                // Try to move the piece one cell down.
+                // Attempt to move the piece one cell down.
                 MovePiece(Vector3.down * cubeSize);
             }
         }
     }
 
     /// <summary>
-    /// Handles left/right movement input. (Shift–modified arrow keys are reserved for camera control.)
+    /// Handles left/right movement input.
+    /// (Shift-modified arrow keys are reserved for camera control.)
     /// </summary>
     void HandleInput()
     {
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
             return;
 
+        // Determine the camera's horizontal right vector.
         Vector3 cameraRight = Camera.main.transform.right;
         cameraRight.y = 0;
         cameraRight.Normalize();
@@ -96,8 +101,8 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Attempts to move the current piece by the given vector.
-    /// If the move is invalid (out-of-bounds or colliding), it is reverted.
-    /// A failed downward move results in locking the piece.
+    /// If the move is invalid (e.g. out-of-bounds or colliding), it is reverted.
+    /// If a downward move is invalid, the piece is locked.
     /// </summary>
     void MovePiece(Vector3 move)
     {
@@ -113,10 +118,10 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Checks that every block in the given piece is within the playable area.
+    /// Checks that every block in the piece is within the playable area.
     /// For X and Z, valid cells have indices ≥ 1 (reserving index 0 for the frame).
-    /// For Y, blocks below the container (cell.y < 0) are disallowed,
-    /// but blocks above (cell.y ≥ gridHeight) are allowed.
+    /// For Y, blocks below the container (cell.y < 0) are invalid;
+    /// blocks above (cell.y ≥ gridHeight) are allowed.
     /// Also, if a cell within the container is already occupied, the position is invalid.
     /// </summary>
     bool IsValidPosition(GameObject piece)
@@ -135,9 +140,9 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Converts a world position to grid coordinates.
-    /// Assumes the container extends in X from -containerWidth/2 to +containerWidth/2,
-    /// in Z from -containerDepth/2 to +containerDepth/2.
+    /// Converts a world-space position to grid coordinates.
+    /// Assumes the container extends in X from -containerWidth/2 to +containerWidth/2
+    /// and in Z from -containerDepth/2 to +containerDepth/2.
     /// </summary>
     Vector3Int WorldToGrid(Vector3 pos)
     {
@@ -148,7 +153,7 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Converts grid coordinates back into a world-space position (the cell center).
+    /// Converts grid coordinates back to a world-space position (the cell center).
     /// </summary>
     Vector3 GridToWorld(Vector3Int cell)
     {
@@ -160,9 +165,8 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Locks the current falling piece in place.
-    /// The piece remains grouped so that its blocks move as one unit,
-    /// and the group is added to the list of locked groups.
-    /// Then processing of line clears and gravity begins.
+    /// Its blocks remain grouped, and the group is added to lockedGroups.
+    /// Then processing (line clearing and gravity) begins.
     /// </summary>
     void LockPiece()
     {
@@ -183,11 +187,11 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Processes locked blocks in separate transactions:
-    /// (A) Clear all complete horizontal lines (X and Z axes only).
-    /// (B) Then apply gravity to intact groups.
-    /// (C) Then apply gravity to detached blocks.
+    /// (A) Clear all complete horizontal lines (X and Z axes).
+    /// (B) Apply gravity to intact locked groups.
+    /// (C) Apply gravity to detached blocks.
     /// These steps are repeated until no further changes occur.
-    /// During this processing, no new piece is spawned and user input is paused.
+    /// During processing, user input is paused and no new piece is spawned.
     /// </summary>
     IEnumerator ProcessLockedBlocks()
     {
@@ -196,37 +200,32 @@ public class GameManager3DTetris : MonoBehaviour
         do
         {
             changesMade = false;
-
             // (A) Clear horizontal lines.
             if (ClearHorizontalLines())
             {
                 changesMade = true;
                 yield return new WaitForSeconds(0.5f);
             }
-
             // (B) Apply gravity to intact locked groups.
             if (ApplyGravityToLockedGroups())
             {
                 changesMade = true;
                 yield return new WaitForSeconds(0.5f);
             }
-
             // (C) Apply gravity to detached blocks.
             if (ApplyGravityToDetachedBlocks())
             {
                 changesMade = true;
                 yield return new WaitForSeconds(0.5f);
             }
-
         } while (changesMade);
-
         processingLockedBlocks = false;
         SpawnNewPiece();
     }
 
     /// <summary>
-    /// Checks for complete horizontal lines along the X and Z axes (for each Y level)
-    /// and clears them. When any block in a group is cleared, the entire group is detached.
+    /// Checks for complete horizontal lines along the X and Z axes (for each Y level) and clears them.
+    /// When any block from a group is cleared, the entire group is detached.
     /// </summary>
     bool ClearHorizontalLines()
     {
@@ -251,9 +250,7 @@ public class GameManager3DTetris : MonoBehaviour
                 if (complete)
                 {
                     for (int x = 1; x < gridWidth; x++)
-                    {
                         cellsToClear.Add(new Vector3Int(x, y, z));
-                    }
                 }
             }
         }
@@ -275,9 +272,7 @@ public class GameManager3DTetris : MonoBehaviour
                 if (complete)
                 {
                     for (int z = 1; z < gridDepth; z++)
-                    {
                         cellsToClear.Add(new Vector3Int(x, y, z));
-                    }
                 }
             }
         }
@@ -288,14 +283,12 @@ public class GameManager3DTetris : MonoBehaviour
             if (grid[cell.x, cell.y, cell.z] != null)
             {
                 Transform block = grid[cell.x, cell.y, cell.z];
-                // If this block belongs to a locked group, mark that group for detachment.
+                // If this block is part of a locked group, mark the group for detachment.
                 if (block.parent != null)
                 {
                     GameObject parentGroup = block.parent.gameObject;
                     if (lockedGroups.Contains(parentGroup))
-                    {
                         groupsToDetach.Add(parentGroup);
-                    }
                 }
                 Destroy(block.gameObject);
                 grid[cell.x, cell.y, cell.z] = null;
@@ -303,21 +296,14 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
 
-        // Detach entire groups for which any block was cleared.
+        // Detach groups for which any block was cleared.
         foreach (GameObject group in groupsToDetach)
         {
-            // Detach all remaining blocks.
             List<Transform> children = new List<Transform>();
             foreach (Transform child in group.transform)
-            {
                 children.Add(child);
-            }
             foreach (Transform child in children)
-            {
-                // Detach by setting the parent to null (or to an optional container if desired).
                 child.SetParent(null);
-            }
-            // Remove the group from the lockedGroups list and destroy its container.
             lockedGroups.Remove(group);
             Destroy(group);
         }
@@ -327,7 +313,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// For each intact locked group, if every block in the group has an unoccupied cell immediately below,
-    /// the entire group is moved downward by one cell. The grid is updated accordingly.
+    /// move the entire group down by one cell and update the grid.
     /// </summary>
     bool ApplyGravityToLockedGroups()
     {
@@ -348,7 +334,6 @@ public class GameManager3DTetris : MonoBehaviour
                 {
                     if (grid[below.x, below.y, below.z] != null)
                     {
-                        // Allow fall only if the block below belongs to the same group.
                         Transform belowBlock = grid[below.x, below.y, below.z];
                         if (belowBlock.parent != group.transform)
                         {
@@ -361,7 +346,6 @@ public class GameManager3DTetris : MonoBehaviour
             if (canFall)
             {
                 group.transform.position += Vector3.down * cubeSize;
-                // Update grid for each block in the group.
                 foreach (Transform block in group.transform)
                 {
                     Vector3Int newCell = WorldToGrid(block.position);
@@ -374,22 +358,21 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Iterates over all grid cells. For any block that is not part of a locked group (i.e. detached),
-    /// if the cell below is free, move the block down by one cell and update the grid.
+    /// Iterates over the grid. For any block not part of a locked group (i.e. detached),
+    /// if the cell below is free, moves the block down by one cell and updates the grid.
     /// </summary>
     bool ApplyGravityToDetachedBlocks()
     {
         bool movedAny = false;
         for (int x = 1; x < gridWidth; x++)
         {
-            for (int y = 1; y < gridHeight; y++) // bottom row (y = 0) cannot fall.
+            for (int y = 1; y < gridHeight; y++)
             {
                 for (int z = 1; z < gridDepth; z++)
                 {
                     if (grid[x, y, z] != null)
                     {
                         Transform block = grid[x, y, z];
-                        // If the block is still part of a locked group, skip it.
                         bool inGroup = (block.parent != null && lockedGroups.Contains(block.parent.gameObject));
                         if (!inGroup)
                         {
@@ -415,14 +398,23 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Spawns a new falling piece at the top-center of the container.
-    /// Uses the FrameGridManager's GridCenter for the X and Z coordinates.
+    /// The X and Z coordinates are taken from the FrameGridManager's GridCenter.
+    /// A random prefab is selected from the fallingPiecePrefabs array.
     /// </summary>
     void SpawnNewPiece()
     {
+        if (fallingPiecePrefabs == null || fallingPiecePrefabs.Length == 0)
+        {
+            Debug.LogError("No falling piece prefabs specified!");
+            return;
+        }
+
+        int randomIndex = Random.Range(0, fallingPiecePrefabs.Length);
+        GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
         Vector3 spawnPosition = new Vector3(
             frameGrid.GridCenter.x,
-            gridHeight * cubeSize + cubeSize, // high enough above the container.
+            gridHeight * cubeSize + cubeSize,
             frameGrid.GridCenter.z);
-        currentPiece = Instantiate(fallingPiecePrefab, spawnPosition, Quaternion.identity);
+        currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
     }
 }
