@@ -35,6 +35,9 @@ public class GameManager3DTetris : MonoBehaviour
     // Flag to disable user input while processing locked blocks.
     private bool processingLockedBlocks = false;
 
+    // The ghost piece (visual only) that shows where the current piece will land.
+    private GameObject ghostPiece;
+
     void Start()
     {
         if (frameGrid == null)
@@ -56,7 +59,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
-        // Disable user input while processing locked blocks.
+        // While processing locked blocks (line clears and gravity), disable user input.
         if (processingLockedBlocks)
             return;
 
@@ -64,7 +67,10 @@ public class GameManager3DTetris : MonoBehaviour
         {
             HandleInput();
 
-            // Determine effective fall interval (apply soft drop if Down Arrow is held).
+            // Update ghost piece to show landing position.
+            UpdateGhostPiece();
+
+            // Determine effective fall interval (use soft drop if Down Arrow is held).
             float effectiveFallInterval = fallInterval;
             if (Input.GetKey(KeyCode.DownArrow))
                 effectiveFallInterval = fallInterval * softDropMultiplier;
@@ -75,6 +81,15 @@ public class GameManager3DTetris : MonoBehaviour
                 fallTimer = 0f;
                 // Attempt to move the piece one cell down.
                 MovePiece(Vector3.down * cubeSize);
+            }
+        }
+        else
+        {
+            // No current piece? Ensure the ghost piece is removed.
+            if (ghostPiece != null)
+            {
+                Destroy(ghostPiece);
+                ghostPiece = null;
             }
         }
     }
@@ -101,7 +116,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Attempts to move the current piece by the given vector.
-    /// If the move is invalid (e.g. out-of-bounds or colliding), it is reverted.
+    /// If the move is invalid (out-of-bounds or colliding), it is reverted.
     /// If a downward move is invalid, the piece is locked.
     /// </summary>
     void MovePiece(Vector3 move)
@@ -182,6 +197,12 @@ public class GameManager3DTetris : MonoBehaviour
         }
         lockedGroups.Add(currentPiece);
         currentPiece = null;
+        // Once a piece is locked, also remove the ghost piece.
+        if (ghostPiece != null)
+        {
+            Destroy(ghostPiece);
+            ghostPiece = null;
+        }
         StartCoroutine(ProcessLockedBlocks());
     }
 
@@ -283,7 +304,7 @@ public class GameManager3DTetris : MonoBehaviour
             if (grid[cell.x, cell.y, cell.z] != null)
             {
                 Transform block = grid[cell.x, cell.y, cell.z];
-                // If this block is part of a locked group, mark the group for detachment.
+                // If this block belongs to a locked group, mark that group for detachment.
                 if (block.parent != null)
                 {
                     GameObject parentGroup = block.parent.gameObject;
@@ -296,7 +317,7 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
 
-        // Detach groups for which any block was cleared.
+        // Detach entire groups for which any block was cleared.
         foreach (GameObject group in groupsToDetach)
         {
             List<Transform> children = new List<Transform>();
@@ -313,7 +334,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// For each intact locked group, if every block in the group has an unoccupied cell immediately below,
-    /// move the entire group down by one cell and update the grid.
+    /// the entire group is moved downward by one cell and the grid is updated accordingly.
     /// </summary>
     bool ApplyGravityToLockedGroups()
     {
@@ -358,7 +379,7 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Iterates over the grid. For any block not part of a locked group (i.e. detached),
+    /// Iterates over all grid cells. For any block not part of a locked group (i.e. detached),
     /// if the cell below is free, moves the block down by one cell and updates the grid.
     /// </summary>
     bool ApplyGravityToDetachedBlocks()
@@ -366,7 +387,7 @@ public class GameManager3DTetris : MonoBehaviour
         bool movedAny = false;
         for (int x = 1; x < gridWidth; x++)
         {
-            for (int y = 1; y < gridHeight; y++)
+            for (int y = 1; y < gridHeight; y++) // bottom row (y = 0) cannot fall.
             {
                 for (int z = 1; z < gridDepth; z++)
                 {
@@ -413,8 +434,101 @@ public class GameManager3DTetris : MonoBehaviour
         GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
         Vector3 spawnPosition = new Vector3(
             frameGrid.GridCenter.x,
-            gridHeight * cubeSize + cubeSize,
+            gridHeight * cubeSize + cubeSize, // high enough above the container.
             frameGrid.GridCenter.z);
         currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
+    }
+
+    // ─────────────────────────────
+    // GHOST PIECE FUNCTIONALITY
+    // ─────────────────────────────
+
+    /// <summary>
+    /// Updates the ghost piece to show where the current falling piece would land.
+    /// The ghost piece is a visual clone that is rendered semi-transparent.
+    /// </summary>
+    void UpdateGhostPiece()
+    {
+        if (currentPiece == null)
+        {
+            if (ghostPiece != null)
+            {
+                Destroy(ghostPiece);
+                ghostPiece = null;
+            }
+            return;
+        }
+
+        if (ghostPiece == null)
+        {
+            // Create a ghost clone from the current piece.
+            ghostPiece = Instantiate(currentPiece);
+            // Remove any components that could interfere (e.g., colliders, scripts) if necessary.
+            // Set ghost appearance.
+            MakeGhost(ghostPiece);
+        }
+        // Ensure the ghost piece's rotation matches the current piece.
+        ghostPiece.transform.rotation = currentPiece.transform.rotation;
+        // Calculate where the current piece would land.
+        Vector3 ghostPos = CalculateGhostPosition(currentPiece);
+        ghostPiece.transform.position = ghostPos;
+    }
+
+    /// <summary>
+    /// Calculates the final landing position for a given piece by simulating downward moves.
+    /// </summary>
+    Vector3 CalculateGhostPosition(GameObject piece)
+    {
+        Vector3 candidatePos = piece.transform.position;
+        // Drop the piece until it no longer occupies a valid position.
+        while (IsValidVirtualPosition(piece, candidatePos))
+        {
+            candidatePos += Vector3.down * cubeSize;
+        }
+        // The last valid position is one step above.
+        candidatePos += Vector3.up * cubeSize;
+        return candidatePos;
+    }
+
+    /// <summary>
+    /// Checks if the piece, if positioned at candidatePos (keeping its local positions),
+    /// is in a valid position in the grid.
+    /// This simulates the movement without altering the actual piece.
+    /// </summary>
+    bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos)
+    {
+        foreach (Transform block in piece.transform)
+        {
+            Vector3 worldPos = candidatePos + block.localPosition;
+            Vector3Int cell = WorldToGrid(worldPos);
+            if (cell.x < 1 || cell.x >= gridWidth || cell.z < 1 || cell.z >= gridDepth)
+                return false;
+            if (cell.y < 0)
+                return false;
+            if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Makes the provided ghost piece semi-transparent by cloning its material(s)
+    /// and reducing the alpha value.
+    /// </summary>
+    void MakeGhost(GameObject ghost)
+    {
+        Renderer[] renderers = ghost.GetComponentsInChildren<Renderer>();
+        foreach (Renderer rend in renderers)
+        {
+            // Create an instance of the material to avoid modifying the original.
+            Material mat = new Material(rend.material);
+            Color c = mat.color;
+            c.a = 0.4f; // Semi-transparent.
+            mat.color = c;
+            rend.material = mat;
+            // Optionally disable shadows.
+            rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            rend.receiveShadows = false;
+        }
     }
 }
