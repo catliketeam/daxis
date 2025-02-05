@@ -70,7 +70,7 @@ public class GameManager3DTetris : MonoBehaviour
             // Update ghost piece so that it always shows the landing position.
             UpdateGhostPiece();
 
-            // Check for slam input (spacebar; add mobile swipe as needed).
+            // Check for slam input (spacebar; add mobile swipe detection as needed).
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SlamPiece();
@@ -145,6 +145,7 @@ public class GameManager3DTetris : MonoBehaviour
     /// For Y, blocks below the container (cell.y < 0) are invalid;
     /// blocks above (cell.y ≥ gridHeight) are allowed.
     /// Also, if a cell within the container is already occupied, the position is invalid.
+    /// (For non-locked pieces, the grid does not yet include its blocks.)
     /// </summary>
     bool IsValidPosition(GameObject piece)
     {
@@ -214,11 +215,10 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Processes locked blocks in separate transactions:
+    /// Processes locked blocks in two phases:
     /// (A) Clear all complete horizontal lines (X and Z axes).
-    /// (B) Apply gravity to intact locked groups.
-    /// (C) Apply gravity to detached blocks.
-    /// These steps are repeated until no further changes occur.
+    /// (B) Apply iterative gravity in a single transaction—moving all pieces and blocks one cell down at a time until no further movement is possible.
+    /// These phases are repeated until no further line clears or falling occur.
     /// During processing, user input is paused and no new piece is spawned.
     /// </summary>
     IEnumerator ProcessLockedBlocks()
@@ -227,41 +227,34 @@ public class GameManager3DTetris : MonoBehaviour
         bool changesMade;
         do
         {
-            changesMade = false;
-            // (A) Clear horizontal lines.
-            if (ClearHorizontalLines())
+            bool linesCleared = ClearHorizontalLines();
+            if (linesCleared)
             {
-                changesMade = true;
                 yield return new WaitForSeconds(0.5f);
+                // Rebuild grid immediately after line clears.
+                RebuildGrid();
             }
-            // (B) Apply gravity to intact locked groups.
-            if (ApplyGravityToLockedGroups())
+            bool gravityApplied = false;
+            // Iteratively move all objects one cell down until none can move.
+            while (ApplyIterativeGravity())
             {
-                changesMade = true;
-                yield return new WaitForSeconds(0.5f);
+                gravityApplied = true;
+                yield return new WaitForSeconds(0.1f);
             }
-            // (C) Apply gravity to detached blocks.
-            if (ApplyGravityToDetachedBlocks())
-            {
-                changesMade = true;
-                yield return new WaitForSeconds(0.5f);
-            }
+            changesMade = linesCleared || gravityApplied;
         } while (changesMade);
-        // Rebuild the grid completely to clear any stale references.
         RebuildGrid();
         processingLockedBlocks = false;
         SpawnNewPiece();
     }
 
     /// <summary>
-    /// Rebuilds the grid array from scratch by clearing it and then iterating
-    /// over all locked blocks (both in groups and detached) to update their grid positions.
+    /// Rebuilds the grid array by clearing it and then repopulating it
+    /// from the positions of all locked blocks (both in groups and detached).
     /// </summary>
     void RebuildGrid()
     {
-        // Clear the grid.
         grid = new Transform[gridWidth, gridHeight, gridDepth];
-        // Re-add blocks from each locked group.
         foreach (GameObject group in lockedGroups)
         {
             foreach (Transform block in group.transform)
@@ -275,10 +268,7 @@ public class GameManager3DTetris : MonoBehaviour
                 }
             }
         }
-        // Also, find any detached blocks in the scene (if you have a dedicated container,
-        // you can iterate over its children here). For simplicity, we assume detached blocks
-        // are not parented to any locked group.
-        // (If you keep track of detached blocks separately, update the grid here as well.)
+        // (If you track detached blocks separately, update them here as well.)
     }
 
     /// <summary>
@@ -291,7 +281,7 @@ public class GameManager3DTetris : MonoBehaviour
         HashSet<Vector3Int> cellsToClear = new HashSet<Vector3Int>();
         HashSet<GameObject> groupsToDetach = new HashSet<GameObject>();
 
-        // Check rows along the X-axis (for each fixed Y and Z in the playable area).
+        // Check rows along the X-axis.
         for (int y = 0; y < gridHeight; y++)
         {
             for (int z = 1; z < gridDepth; z++)
@@ -313,7 +303,7 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
 
-        // Check rows along the Z-axis (for each fixed Y and X in the playable area).
+        // Check rows along the Z-axis.
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 1; x < gridWidth; x++)
@@ -341,7 +331,6 @@ public class GameManager3DTetris : MonoBehaviour
             if (grid[cell.x, cell.y, cell.z] != null)
             {
                 Transform block = grid[cell.x, cell.y, cell.z];
-                // Mark the block's group for detachment if it belongs to one.
                 if (block.parent != null)
                 {
                     GameObject parentGroup = block.parent.gameObject;
@@ -369,111 +358,112 @@ public class GameManager3DTetris : MonoBehaviour
         return clearedAny;
     }
 
-    /// <summary>
-    /// For each intact locked group, if every block in the group has an unoccupied cell immediately below,
-    /// the entire group is moved downward by one cell and the grid is updated accordingly.
-    /// </summary>
-    bool ApplyGravityToLockedGroups()
-    {
-        bool movedAny = false;
-        foreach (GameObject group in lockedGroups.ToArray())
-        {
-            bool canFall = true;
-            foreach (Transform block in group.transform)
-            {
-                Vector3Int cell = WorldToGrid(block.position);
-                if (cell.y == 0)
-                {
-                    canFall = false;
-                    break;
-                }
-                Vector3Int below = new Vector3Int(cell.x, cell.y - 1, cell.z);
-                if (below.y >= 0 && below.y < gridHeight)
-                {
-                    if (grid[below.x, below.y, below.z] != null)
-                    {
-                        Transform belowBlock = grid[below.x, below.y, below.z];
-                        if (belowBlock.parent != group.transform)
-                        {
-                            canFall = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (canFall)
-            {
-                group.transform.position += Vector3.down * cubeSize;
-                foreach (Transform block in group.transform)
-                {
-                    Vector3Int newCell = WorldToGrid(block.position);
-                    grid[newCell.x, newCell.y, newCell.z] = block;
-                }
-                movedAny = true;
-            }
-        }
-        return movedAny;
-    }
+    // ─────────────────────────────
+    // ITERATIVE GRAVITY FUNCTIONALITY
+    // ─────────────────────────────
 
     /// <summary>
-    /// Iterates over all grid cells. For any block not part of a locked group (i.e. detached),
-    /// if the cell below is free, moves the block down by one cell and updates the grid.
+    /// Applies gravity iteratively in one transaction. It checks all locked groups and detached blocks
+    /// to see if they can move down one cell; if so, they are moved simultaneously and the grid is rebuilt.
+    /// Returns true if any object moved.
     /// </summary>
-    bool ApplyGravityToDetachedBlocks()
+    bool ApplyIterativeGravity()
     {
-        bool movedAny = false;
+        bool anyMoved = false;
+        // Gather movable locked groups.
+        List<GameObject> groupsThatCanMove = new List<GameObject>();
+        foreach (GameObject group in lockedGroups)
+        {
+            if (IsValidVirtualPosition(group, group.transform.position + Vector3.down * cubeSize))
+                groupsThatCanMove.Add(group);
+        }
+
+        // Gather movable detached blocks by scanning the grid.
+        List<Transform> detachedThatCanMove = new List<Transform>();
         for (int x = 1; x < gridWidth; x++)
         {
-            for (int y = 1; y < gridHeight; y++) // bottom row (y = 0) cannot fall.
+            for (int y = 1; y < gridHeight; y++)
             {
                 for (int z = 1; z < gridDepth; z++)
                 {
                     if (grid[x, y, z] != null)
                     {
                         Transform block = grid[x, y, z];
-                        bool inGroup = (block.parent != null && lockedGroups.Contains(block.parent.gameObject));
-                        if (!inGroup)
+                        if (block.parent == null) // detached
                         {
-                            Vector3Int cell = new Vector3Int(x, y, z);
-                            if (cell.y > 0)
-                            {
-                                Vector3Int below = new Vector3Int(x, y - 1, z);
-                                if (grid[below.x, below.y, below.z] == null)
-                                {
-                                    block.position += Vector3.down * cubeSize;
-                                    grid[x, y, z] = null;
-                                    grid[below.x, below.y, below.z] = block;
-                                    movedAny = true;
-                                }
-                            }
+                            if (IsValidVirtualPositionForBlock(block, block.position + Vector3.down * cubeSize))
+                                detachedThatCanMove.Add(block);
                         }
                     }
                 }
             }
         }
-        return movedAny;
+
+        if (groupsThatCanMove.Count > 0 || detachedThatCanMove.Count > 0)
+        {
+            foreach (GameObject group in groupsThatCanMove)
+            {
+                group.transform.position += Vector3.down * cubeSize;
+            }
+            foreach (Transform block in detachedThatCanMove)
+            {
+                block.position += Vector3.down * cubeSize;
+            }
+            anyMoved = true;
+            RebuildGrid();
+        }
+        return anyMoved;
     }
 
     /// <summary>
-    /// Spawns a new falling piece at the top-center of the container.
-    /// The X and Z coordinates are taken from the FrameGridManager's GridCenter.
-    /// A random prefab is selected from the fallingPiecePrefabs array.
+    /// Checks if a single block (treated as a one-cube piece) can be at candidatePos.
     /// </summary>
-    void SpawnNewPiece()
+    bool IsValidVirtualPositionForBlock(Transform block, Vector3 candidatePos)
     {
-        if (fallingPiecePrefabs == null || fallingPiecePrefabs.Length == 0)
-        {
-            Debug.LogError("No falling piece prefabs specified!");
-            return;
-        }
+        Vector3Int cell = WorldToGrid(candidatePos);
+        if (cell.x < 1 || cell.x >= gridWidth || cell.z < 1 || cell.z >= gridDepth)
+            return false;
+        if (cell.y < 0)
+            return false;
+        // Ignore the block itself.
+        if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null && grid[cell.x, cell.y, cell.z] != block)
+            return false;
+        return true;
+    }
 
-        int randomIndex = Random.Range(0, fallingPiecePrefabs.Length);
-        GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
-        Vector3 spawnPosition = new Vector3(
-            frameGrid.GridCenter.x,
-            gridHeight * cubeSize + cubeSize, // high enough above the container.
-            frameGrid.GridCenter.z);
-        currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
+    // ─────────────────────────────
+    // VIRTUAL POSITION CHECK WITH DEBUGGING (UPDATED)
+    // ─────────────────────────────
+
+    /// <summary>
+    /// Checks if the piece, if positioned at candidatePos (keeping its local positions),
+    /// is in a valid position in the grid.
+    /// Now, it ignores cells that are occupied by blocks that belong to the same piece.
+    /// Debug logging is included to trace cell checks.
+    /// </summary>
+    bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos)
+    {
+        foreach (Transform block in piece.transform)
+        {
+            Vector3 worldPos = candidatePos + block.localPosition;
+            Vector3Int cell = WorldToGrid(worldPos);
+            Debug.Log($"[VirtualPos] Checking block of {piece.name} at candidatePos {worldPos} (cell {cell})");
+            if (cell.x < 1 || cell.x >= gridWidth || cell.z < 1 || cell.z >= gridDepth)
+                return false;
+            if (cell.y < 0)
+                return false;
+            // Only treat the cell as occupied if it is occupied by a block that is not part of this piece.
+            if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null)
+            {
+                // If the block in the grid is not a child of our piece, then it is an obstruction.
+                if (!grid[cell.x, cell.y, cell.z].IsChildOf(piece.transform))
+                {
+                    Debug.Log($"[VirtualPos] Cell {cell} is occupied by {grid[cell.x, cell.y, cell.z].name} (not part of {piece.name})");
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // ─────────────────────────────
@@ -525,28 +515,8 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Checks if the piece, if positioned at candidatePos (keeping its local positions),
-    /// is in a valid position in the grid.
-    /// </summary>
-    bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos)
-    {
-        foreach (Transform block in piece.transform)
-        {
-            Vector3 worldPos = candidatePos + block.localPosition;
-            Vector3Int cell = WorldToGrid(worldPos);
-            if (cell.x < 1 || cell.x >= gridWidth || cell.z < 1 || cell.z >= gridDepth)
-                return false;
-            if (cell.y < 0)
-                return false;
-            if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null)
-                return false;
-        }
-        return true;
-    }
-
-    /// <summary>
     /// Makes the provided ghost piece semi-transparent.
-    /// (You mentioned you have set your shader to be transparent; alpha is set to 0.4.)
+    /// (Assumes the shader is set up to support transparency; alpha is set to 0.4.)
     /// </summary>
     void MakeGhost(GameObject ghost)
     {
@@ -556,10 +526,9 @@ public class GameManager3DTetris : MonoBehaviour
             // Create an instance of the material to avoid modifying the original.
             Material mat = new Material(rend.material);
             Color c = mat.color;
-            c.a = 0.4f; // Semi-transparent.
+            c.a = 0.4f;
             mat.color = c;
             rend.material = mat;
-            // Optionally disable shadows.
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rend.receiveShadows = false;
         }
@@ -571,7 +540,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Instantly drops the current falling piece to its landing position and locks it.
-    /// This method is triggered when the user presses the spacebar (or swipes down on mobile).
+    /// Triggered when the user presses the spacebar (or swipes down on mobile).
     /// </summary>
     void SlamPiece()
     {
@@ -581,5 +550,27 @@ public class GameManager3DTetris : MonoBehaviour
             currentPiece.transform.position = slamPos;
             LockPiece();
         }
+    }
+
+    /// <summary>
+    /// Spawns a new falling piece at the top-center of the container.
+    /// The X and Z coordinates are taken from the FrameGridManager's GridCenter.
+    /// A random prefab is selected from the fallingPiecePrefabs array.
+    /// </summary>
+    void SpawnNewPiece()
+    {
+        if (fallingPiecePrefabs == null || fallingPiecePrefabs.Length == 0)
+        {
+            Debug.LogError("No falling piece prefabs specified!");
+            return;
+        }
+
+        int randomIndex = Random.Range(0, fallingPiecePrefabs.Length);
+        GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
+        Vector3 spawnPosition = new Vector3(
+            frameGrid.GridCenter.x,
+            gridHeight * cubeSize + cubeSize,
+            frameGrid.GridCenter.z);
+        currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
     }
 }
