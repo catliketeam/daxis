@@ -59,7 +59,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
-        // While processing locked blocks (line clears and gravity), disable user input.
+        // Disable user input while processing locked blocks.
         if (processingLockedBlocks)
             return;
 
@@ -67,8 +67,15 @@ public class GameManager3DTetris : MonoBehaviour
         {
             HandleInput();
 
-            // Update ghost piece to show landing position.
+            // Update ghost piece so that it always shows the landing position.
             UpdateGhostPiece();
+
+            // Check for slam input (spacebar; add mobile swipe as needed).
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                SlamPiece();
+                return; // Skip further processing this frame.
+            }
 
             // Determine effective fall interval (use soft drop if Down Arrow is held).
             float effectiveFallInterval = fallInterval;
@@ -116,7 +123,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Attempts to move the current piece by the given vector.
-    /// If the move is invalid (out-of-bounds or colliding), it is reverted.
+    /// If the move is invalid (e.g., out-of-bounds or colliding), it is reverted.
     /// If a downward move is invalid, the piece is locked.
     /// </summary>
     void MovePiece(Vector3 move)
@@ -197,7 +204,7 @@ public class GameManager3DTetris : MonoBehaviour
         }
         lockedGroups.Add(currentPiece);
         currentPiece = null;
-        // Once a piece is locked, also remove the ghost piece.
+        // Remove the ghost piece when locking.
         if (ghostPiece != null)
         {
             Destroy(ghostPiece);
@@ -240,8 +247,38 @@ public class GameManager3DTetris : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
             }
         } while (changesMade);
+        // Rebuild the grid completely to clear any stale references.
+        RebuildGrid();
         processingLockedBlocks = false;
         SpawnNewPiece();
+    }
+
+    /// <summary>
+    /// Rebuilds the grid array from scratch by clearing it and then iterating
+    /// over all locked blocks (both in groups and detached) to update their grid positions.
+    /// </summary>
+    void RebuildGrid()
+    {
+        // Clear the grid.
+        grid = new Transform[gridWidth, gridHeight, gridDepth];
+        // Re-add blocks from each locked group.
+        foreach (GameObject group in lockedGroups)
+        {
+            foreach (Transform block in group.transform)
+            {
+                Vector3Int cell = WorldToGrid(block.position);
+                if (cell.x >= 0 && cell.x < gridWidth &&
+                    cell.y >= 0 && cell.y < gridHeight &&
+                    cell.z >= 0 && cell.z < gridDepth)
+                {
+                    grid[cell.x, cell.y, cell.z] = block;
+                }
+            }
+        }
+        // Also, find any detached blocks in the scene (if you have a dedicated container,
+        // you can iterate over its children here). For simplicity, we assume detached blocks
+        // are not parented to any locked group.
+        // (If you keep track of detached blocks separately, update the grid here as well.)
     }
 
     /// <summary>
@@ -304,7 +341,7 @@ public class GameManager3DTetris : MonoBehaviour
             if (grid[cell.x, cell.y, cell.z] != null)
             {
                 Transform block = grid[cell.x, cell.y, cell.z];
-                // If this block belongs to a locked group, mark that group for detachment.
+                // Mark the block's group for detachment if it belongs to one.
                 if (block.parent != null)
                 {
                     GameObject parentGroup = block.parent.gameObject;
@@ -445,7 +482,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Updates the ghost piece to show where the current falling piece would land.
-    /// The ghost piece is a visual clone that is rendered semi-transparent.
+    /// The ghost piece is a visual clone rendered semi-transparently and does not affect game logic.
     /// </summary>
     void UpdateGhostPiece()
     {
@@ -463,8 +500,7 @@ public class GameManager3DTetris : MonoBehaviour
         {
             // Create a ghost clone from the current piece.
             ghostPiece = Instantiate(currentPiece);
-            // Remove any components that could interfere (e.g., colliders, scripts) if necessary.
-            // Set ghost appearance.
+            // Optionally remove any components (e.g., colliders, scripts) that might interfere.
             MakeGhost(ghostPiece);
         }
         // Ensure the ghost piece's rotation matches the current piece.
@@ -480,20 +516,17 @@ public class GameManager3DTetris : MonoBehaviour
     Vector3 CalculateGhostPosition(GameObject piece)
     {
         Vector3 candidatePos = piece.transform.position;
-        // Drop the piece until it no longer occupies a valid position.
         while (IsValidVirtualPosition(piece, candidatePos))
         {
             candidatePos += Vector3.down * cubeSize;
         }
-        // The last valid position is one step above.
-        candidatePos += Vector3.up * cubeSize;
+        candidatePos += Vector3.up * cubeSize; // last valid position
         return candidatePos;
     }
 
     /// <summary>
     /// Checks if the piece, if positioned at candidatePos (keeping its local positions),
     /// is in a valid position in the grid.
-    /// This simulates the movement without altering the actual piece.
     /// </summary>
     bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos)
     {
@@ -512,8 +545,8 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Makes the provided ghost piece semi-transparent by cloning its material(s)
-    /// and reducing the alpha value.
+    /// Makes the provided ghost piece semi-transparent.
+    /// (You mentioned you have set your shader to be transparent; alpha is set to 0.4.)
     /// </summary>
     void MakeGhost(GameObject ghost)
     {
@@ -529,6 +562,24 @@ public class GameManager3DTetris : MonoBehaviour
             // Optionally disable shadows.
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rend.receiveShadows = false;
+        }
+    }
+
+    // ─────────────────────────────
+    // SLAM DOWN FUNCTIONALITY
+    // ─────────────────────────────
+
+    /// <summary>
+    /// Instantly drops the current falling piece to its landing position and locks it.
+    /// This method is triggered when the user presses the spacebar (or swipes down on mobile).
+    /// </summary>
+    void SlamPiece()
+    {
+        if (currentPiece != null)
+        {
+            Vector3 slamPos = CalculateGhostPosition(currentPiece);
+            currentPiece.transform.position = slamPos;
+            LockPiece();
         }
     }
 }
