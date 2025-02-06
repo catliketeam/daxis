@@ -475,7 +475,8 @@ MonoBehaviour:
   containerDepth: 10
   containerHeight: 20
   cubeSize: 1
-  cubePrefab: {fileID: 679379949076120610, guid: e8a6505fbfbe14f7099f938b2fc02dec, type: 3}
+  cellPrefab: {fileID: 679379949076120610, guid: e8a6505fbfbe14f7099f938b2fc02dec, type: 3}
+  framePadding: 0.5
 --- !u!4 &1048888616
 Transform:
   m_ObjectHideFlags: 0
@@ -524,6 +525,7 @@ MonoBehaviour:
   fallingPiecePrefabs:
   - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
   - {fileID: 7949932603857005071, guid: ccbcf1adb26764e6493d0dbcfea61a30, type: 3}
+  - {fileID: 7949932603857005071, guid: 372099a5fdf2041328741c7b65b1c120, type: 3}
   fallInterval: 1
   softDropMultiplier: 0.2
 --- !u!4 &1407419148
