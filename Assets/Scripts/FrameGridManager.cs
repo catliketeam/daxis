@@ -2,89 +2,118 @@ using UnityEngine;
 
 public class FrameGridManager : MonoBehaviour
 {
-    [Header("Container Dimensions (multiples of cubeSize)")]
-    [Tooltip("The overall width (x-direction) of the container.")]
+    [Header("Container Settings")]
+    [Tooltip("The overall width of the container (in world units).")]
     public float containerWidth = 10f;
-    [Tooltip("The overall depth (z-direction) of the container.")]
+    [Tooltip("The overall depth of the container (in world units).")]
     public float containerDepth = 10f;
-    [Tooltip("The overall height (y-direction) of the container.")]
+    [Tooltip("The overall height of the container (in world units).")]
     public float containerHeight = 20f;
-    
-    [Header("Cube Settings")]
-    [Tooltip("The size of each cube. This value is used as the spacing along the edges.")]
+    [Tooltip("The size of each cell (cube).")]
     public float cubeSize = 1f;
-    [Tooltip("Assign your Cube Prefab here.")]
-    public GameObject cubePrefab;
+    [Tooltip("Prefab for a single frame cell.")]
+    public GameObject cellPrefab;
 
-    // GridCenter represents the center of the container (horizontally and vertically).
+    [Header("Frame Appearance")]
+    [Tooltip("Padding to offset the frame blocks outside the playable area (in world units).")]
+    public float framePadding = 0.5f;  // This will place frame cell centers at -halfWidth - 0.5 and halfWidth + 0.5
+
+    // The GridCenter is defined as the center of the container.
+    // With the bottom centered at (0,0,0), the overall center is (0, containerHeight/2, 0).
     public Vector3 GridCenter { get; private set; }
 
     void Start()
     {
-        // Calculate half dimensions for convenience.
+        // Calculate the center of the container.
+        GridCenter = new Vector3(0, containerHeight / 2f, 0);
+
+        // Calculate half dimensions.
         float halfWidth = containerWidth / 2f;
         float halfDepth = containerDepth / 2f;
-        
-        // Define the bottom corners (y = 0) of the container.
-        Vector3 bottomFrontLeft  = new Vector3(-halfWidth, 0f,  halfDepth);
-        Vector3 bottomFrontRight = new Vector3( halfWidth, 0f,  halfDepth);
-        Vector3 bottomBackRight  = new Vector3( halfWidth, 0f, -halfDepth);
-        Vector3 bottomBackLeft   = new Vector3(-halfWidth, 0f, -halfDepth);
-        
-        // Compute the horizontal center from the bottom corners.
-        Vector3 bottomCenter = (bottomFrontLeft + bottomFrontRight + bottomBackRight + bottomBackLeft) / 4f;
-        // Set GridCenter so that its vertical coordinate is at half the container's height.
-        GridCenter = new Vector3(bottomCenter.x, containerHeight / 2f, bottomCenter.z);
-        
-        // Define the corresponding top corners (y = containerHeight).
-        Vector3 topFrontLeft  = bottomFrontLeft  + Vector3.up * containerHeight;
-        Vector3 topFrontRight = bottomFrontRight + Vector3.up * containerHeight;
-        Vector3 topBackRight  = bottomBackRight  + Vector3.up * containerHeight;
-        Vector3 topBackLeft   = bottomBackLeft   + Vector3.up * containerHeight;
-        
-        // --- Build the Bottom Frame (perimeter at y = 0) ---
-        PlaceCubesAlongEdge(bottomFrontLeft,  bottomFrontRight);
-        PlaceCubesAlongEdge(bottomFrontRight, bottomBackRight);
-        PlaceCubesAlongEdge(bottomBackRight,  bottomBackLeft);
-        PlaceCubesAlongEdge(bottomBackLeft,   bottomFrontLeft);
-        
-        // --- Build the Vertical Edges (corner columns) ---
-        PlaceCubesAlongEdge(bottomFrontLeft,  topFrontLeft);
-        PlaceCubesAlongEdge(bottomFrontRight, topFrontRight);
-        PlaceCubesAlongEdge(bottomBackRight,  topBackRight);
-        PlaceCubesAlongEdge(bottomBackLeft,   topBackLeft);
-        
-        // --- Build the Top Frame (perimeter at y = containerHeight) ---
-        PlaceCubesAlongEdge(topFrontLeft,  topFrontRight);
-        PlaceCubesAlongEdge(topFrontRight, topBackRight);
-        PlaceCubesAlongEdge(topBackRight,  topBackLeft);
-        PlaceCubesAlongEdge(topBackLeft,   topFrontLeft);
-    }
 
-    /// <summary>
-    /// Instantiates cubes along the straight-line edge between two points.
-    /// Both endpoints are included.
-    /// </summary>
-    /// <param name="start">Starting point of the edge.</param>
-    /// <param name="end">Ending point of the edge.</param>
-    void PlaceCubesAlongEdge(Vector3 start, Vector3 end)
-    {
-        float distance = Vector3.Distance(start, end);
-        int segments = Mathf.RoundToInt(distance / cubeSize);
+        // Set frame block positions so that they lie outside the playable area.
+        // For a containerWidth of 10 and framePadding of 0.5, the left edge will be at -5.5 and the right at 5.5.
+        float leftX = -halfWidth - framePadding;   // e.g., -5 - 0.5 = -5.5
+        float rightX = halfWidth + framePadding;     // e.g., 5 + 0.5 = 5.5
+        float frontZ = halfDepth + framePadding;     // e.g., 5 + 0.5 = 5.5
+        float backZ = -halfDepth - framePadding;     // e.g., -5 - 0.5 = -5.5
 
-        // Ensure at least one cube is placed.
-        if (segments <= 0)
+        // --- Generate the Bottom Frame (y = 0) ---
+        // Front edge (along X axis)
+        for (float x = leftX; x <= rightX; x += cubeSize)
         {
-            Instantiate(cubePrefab, start, Quaternion.identity, transform);
-            return;
+            Vector3 pos = new Vector3(x, 0, frontZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Back edge
+        for (float x = leftX; x <= rightX; x += cubeSize)
+        {
+            Vector3 pos = new Vector3(x, 0, backZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Left edge (along Z axis)
+        for (float z = backZ; z <= frontZ; z += cubeSize)
+        {
+            Vector3 pos = new Vector3(leftX, 0, z);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Right edge
+        for (float z = backZ; z <= frontZ; z += cubeSize)
+        {
+            Vector3 pos = new Vector3(rightX, 0, z);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
         }
 
-        // Place cubes along the edge, including both endpoints.
-        for (int i = 0; i <= segments; i++)
+        // --- Generate Vertical Frame Columns (at the corners) ---
+        // Front-Left
+        for (float y = 0; y <= containerHeight; y += cubeSize)
         {
-            float t = (float)i / segments;
-            Vector3 position = Vector3.Lerp(start, end, t);
-            Instantiate(cubePrefab, position, Quaternion.identity, transform);
+            Vector3 pos = new Vector3(leftX, y, frontZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Front-Right
+        for (float y = 0; y <= containerHeight; y += cubeSize)
+        {
+            Vector3 pos = new Vector3(rightX, y, frontZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Back-Left
+        for (float y = 0; y <= containerHeight; y += cubeSize)
+        {
+            Vector3 pos = new Vector3(leftX, y, backZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Back-Right
+        for (float y = 0; y <= containerHeight; y += cubeSize)
+        {
+            Vector3 pos = new Vector3(rightX, y, backZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+
+        // --- Generate the Top Frame (y = containerHeight) ---
+        // Front edge
+        for (float x = leftX; x <= rightX; x += cubeSize)
+        {
+            Vector3 pos = new Vector3(x, containerHeight, frontZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Back edge
+        for (float x = leftX; x <= rightX; x += cubeSize)
+        {
+            Vector3 pos = new Vector3(x, containerHeight, backZ);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Left edge
+        for (float z = backZ; z <= frontZ; z += cubeSize)
+        {
+            Vector3 pos = new Vector3(leftX, containerHeight, z);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
+        }
+        // Right edge
+        for (float z = backZ; z <= frontZ; z += cubeSize)
+        {
+            Vector3 pos = new Vector3(rightX, containerHeight, z);
+            Instantiate(cellPrefab, pos, Quaternion.identity, transform);
         }
     }
 }
