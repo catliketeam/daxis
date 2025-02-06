@@ -304,7 +304,8 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Checks for complete horizontal lines along the X and Z axes (for each Y level) and clears them.
-    /// When any block from a group is cleared, the entire group is detached.
+    /// When any block from a group is cleared, only that block is destroyed.
+    /// After the clear, any group that loses one or more blocks is detached (its remaining children are set to tag "Block").
     /// </summary>
     bool ClearHorizontalLines()
     {
@@ -312,7 +313,9 @@ public class GameManager3DTetris : MonoBehaviour
         HashSet<Vector3Int> cellsToClear = new HashSet<Vector3Int>();
         HashSet<GameObject> groupsToDetach = new HashSet<GameObject>();
 
-        // Check rows along the X-axis.
+        // Check every cell in the grid (for each Y level, check entire row in X and entire row in Z)
+        // Here we consider a line complete if every cell in that row is occupied.
+        // First, check rows along the X-axis.
         for (int y = 0; y < gridHeight; y++)
         {
             for (int z = 0; z < gridDepth; z++)
@@ -334,7 +337,7 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
 
-        // Check rows along the Z-axis.
+        // Next, check rows along the Z-axis.
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
@@ -356,30 +359,36 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
 
+        // Destroy only the blocks in the cleared cells.
         foreach (Vector3Int cell in cellsToClear)
         {
             if (grid[cell.x, cell.y, cell.z] != null)
             {
                 Transform block = grid[cell.x, cell.y, cell.z];
-                if (block.parent != null)
-                {
-                    GameObject parentGroup = block.parent.gameObject;
-                    if (lockedGroups.Contains(parentGroup))
-                        groupsToDetach.Add(parentGroup);
-                }
+                // Record its parent group if any.
+                GameObject parentGroup = block.parent != null ? block.parent.gameObject : null;
                 Destroy(block.gameObject);
                 grid[cell.x, cell.y, cell.z] = null;
                 clearedAny = true;
+                if (parentGroup != null && lockedGroups.Contains(parentGroup))
+                {
+                    groupsToDetach.Add(parentGroup);
+                }
             }
         }
 
+        // For each group that had any block removed, detach its remaining children.
         foreach (GameObject group in groupsToDetach)
         {
             List<Transform> children = new List<Transform>();
             foreach (Transform child in group.transform)
                 children.Add(child);
             foreach (Transform child in children)
+            {
                 child.SetParent(null);
+                // Ensure the detached block is tagged appropriately.
+                child.gameObject.tag = "Block";
+            }
             lockedGroups.Remove(group);
             Destroy(group);
         }
