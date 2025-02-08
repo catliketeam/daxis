@@ -1,144 +1,126 @@
 using UnityEngine;
-using System.Collections;
 
 public class CameraController : MonoBehaviour
 {
-    [Header("Target and Distance")]
-    [Tooltip("If left empty, the script will attempt to find a GridManager and use its GridCenter.")]
-    public Transform target; // The camera will look at this target
-    public float distance = 20f; // How far the camera is from the target
+    [Header("References")]
+    [Tooltip("Reference to the GameManager3DTetris for grid occupancy information. Ensure GameManager3DTetris exposes GhostPiece.")]
+    public GameManager3DTetris gameManager;
+    [Tooltip("The target the camera should look at (typically the center of the play area). If unassigned, defaults to Vector3.zero.")]
+    public Transform target;
+    [Tooltip("Optional: The transform of the frame. The camera’s base yaw is derived from this.")]
+    public Transform frameTransform;
 
-    [Header("Swipe Settings")]
-    public float swipeThreshold = 50f; // Minimum swipe distance (in pixels) to count as a swipe
+    [Header("Dynamic Camera Settings (Empty -> Full)")]
+    [Tooltip("Camera Y offset when the play area is empty (few blocks).")]
+    public float emptyCameraY = 10f;
+    [Tooltip("Camera Y offset when the play area is full.")]
+    public float fullCameraY = 20f;
+    [Tooltip("Camera distance from the target when the play area is empty (closer in).")]
+    public float emptyDistance = 13f;
+    [Tooltip("Camera distance from the target when the play area is full (further away).")]
+    public float fullDistance = 15f;
+    [Tooltip("Camera pitch (tilt angle) when the play area is empty (shallow view).")]
+    public float emptyPitch = 10f;
+    [Tooltip("Camera pitch when the play area is full (steeper, looking down).")]
+    public float fullPitch = 60f;
+    [Tooltip("Speed at which the camera moves and rotates.")]
+    public float lerpSpeed = 2f;
 
-    private int currentFace = 0; // 0 = front, 1 = right, 2 = back, 3 = left
-    private Vector3[] positions;
-    private Quaternion[] rotations;
+    [Header("Viewport Alignment")]
+    [Tooltip("World-space Y coordinate where the bottom edge of the camera's viewport should align. Typically, this is the top edge of the bottom row of the play area (e.g., 1).")]
+    public float desiredBottomEdge = 1f;
 
-    // Variables for swipe detection
-    private Vector2 touchStart;
-    private bool isSwiping = false;
+    [Header("Vertical Margin")]
+    [Tooltip("The minimum vertical margin above the ghost piece's Y position. The camera's Y will be at least ghostPiece.y + this value.")]
+    public float minVerticalMargin = 5f;
 
     void Start()
     {
-        if (target == null)
+        // Automatically derive frameTransform if not assigned.
+        if (frameTransform == null && gameManager != null && gameManager.frameGrid != null)
         {
-            // Try to find the FrameGridManager in the scene.
-            FrameGridManager gridManager = FindObjectOfType<FrameGridManager>();
-            if (gridManager != null)
-            {
-                // Use the computed GridCenter from the grid manager.
-                GameObject dummyTarget = new GameObject("CameraTarget");
-                dummyTarget.transform.position = gridManager.GridCenter;
-                target = dummyTarget.transform;
-            }
-            else
-            {
-                Debug.LogError("No FrameGridManager found in the scene. Please add one or assign a target manually.");
-            }
+            frameTransform = gameManager.frameGrid.transform;
         }
-
-        // Pre-calculate the camera positions and rotations for each side of the grid.
-        positions = new Vector3[4];
-        rotations = new Quaternion[4];
-
-        // Face 0: Front (assume front is in the negative Z direction)
-        positions[0] = target.position + new Vector3(0, 0, -distance);
-        rotations[0] = Quaternion.LookRotation(target.position - positions[0]);
-
-        // Face 1: Right (positive X)
-        positions[1] = target.position + new Vector3(distance, 0, 0);
-        rotations[1] = Quaternion.LookRotation(target.position - positions[1]);
-
-        // Face 2: Back (positive Z)
-        positions[2] = target.position + new Vector3(0, 0, distance);
-        rotations[2] = Quaternion.LookRotation(target.position - positions[2]);
-
-        // Face 3: Left (negative X)
-        positions[3] = target.position + new Vector3(-distance, 0, 0);
-        rotations[3] = Quaternion.LookRotation(target.position - positions[3]);
-
-        // Set the initial camera position and rotation
-        transform.position = positions[currentFace];
-        transform.rotation = rotations[currentFace];
-    }
-
-    // Call this to move to the next face (e.g., on swipe right)
-    public void NextFace()
-    {
-        currentFace = (currentFace + 1) % 4;
-        StopAllCoroutines();
-        StartCoroutine(MoveCameraTo(positions[currentFace], rotations[currentFace]));
-    }
-
-    // Call this to move to the previous face (e.g., on swipe left)
-    public void PreviousFace()
-    {
-        currentFace = (currentFace - 1 + 4) % 4;
-        StopAllCoroutines();
-        StartCoroutine(MoveCameraTo(positions[currentFace], rotations[currentFace]));
-    }
-
-    // Smoothly transitions the camera from its current position/rotation to the new ones.
-    IEnumerator MoveCameraTo(Vector3 newPosition, Quaternion newRotation)
-    {
-        float duration = 0.5f; // Duration of the transition in seconds
-        float t = 0;
-        Vector3 startPos = transform.position;
-        Quaternion startRot = transform.rotation;
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float fraction = t / duration;
-            transform.position = Vector3.Lerp(startPos, newPosition, fraction);
-            transform.rotation = Quaternion.Slerp(startRot, newRotation, fraction);
-            yield return null;
-        }
-        transform.position = newPosition;
-        transform.rotation = newRotation;
     }
 
     void Update()
     {
-        // ---- Keyboard Input (Shift + Left/Right) ----
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        if (gameManager == null)
         {
-            if (Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                PreviousFace();
-            }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                NextFace();
-            }
+            Debug.LogWarning("CameraController: GameManager3DTetris reference is missing.");
+            return;
         }
 
-        // ---- Mobile Touch/Swipe Input ----
-        if (Input.touchCount > 0)
+        // --- Determine the Effective Target Position ---
+        // Prefer the ghost piece's position; otherwise, use the assigned target; if neither is available, default to Vector3.zero.
+        Vector3 effectiveTargetPosition = Vector3.zero;
+        if (gameManager.GhostPiece != null)
+            effectiveTargetPosition = gameManager.GhostPiece.transform.position;
+        else if (target != null)
+            effectiveTargetPosition = target.position;
+
+        // --- Occupancy-Based Adjustments ---
+        int maxOccupiedY = gameManager.GetMaxOccupiedY();
+        int gridH = gameManager.GridHeight;
+        // Compute normalized occupancy value t:
+        // t = (maxOccupiedY) / (gridH * 2f - 1), clamped between 0 and 1.
+        float t = (gridH > 1) ? Mathf.Clamp01(((float)maxOccupiedY) / (gridH * 2f - 1)) : 0f;
+
+        float desiredY = Mathf.Lerp(emptyCameraY, fullCameraY, t);
+        float desiredDistance = Mathf.Lerp(emptyDistance, fullDistance, t);
+        float desiredPitch = Mathf.Lerp(emptyPitch, fullPitch, t);
+
+        // --- Automatic Yaw from the Frame Transform ---
+        float baseYaw = (frameTransform != null) ? frameTransform.eulerAngles.y : 0f;
+        float finalYaw = baseYaw; // No manual yaw adjustments.
+
+        // --- Compute Preliminary Desired Camera Position ---
+        Quaternion desiredRotationForPos = Quaternion.Euler(desiredPitch, finalYaw, 0);
+        Vector3 offset = desiredRotationForPos * new Vector3(0, 0, -desiredDistance);
+        Vector3 preliminaryPos = new Vector3(effectiveTargetPosition.x + offset.x,
+                                             effectiveTargetPosition.y + desiredY,
+                                             effectiveTargetPosition.z + offset.z);
+
+        // --- Adjust for Viewport Bottom Alignment ---
+        Vector3 viewportBottomCenter = ComputeViewportBottomCenter(preliminaryPos, desiredRotationForPos);
+        float yAdjustment = viewportBottomCenter.y - desiredBottomEdge;
+        Vector3 finalCameraPosition = preliminaryPos;
+        finalCameraPosition.y -= yAdjustment;
+
+        // --- Ensure the Camera's Y is at least minVerticalMargin above the ghost piece ---
+        if (gameManager.GhostPiece != null)
         {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began)
-            {
-                touchStart = touch.position;
-                isSwiping = true;
-            }
-            else if (touch.phase == TouchPhase.Ended && isSwiping)
-            {
-                Vector2 touchEnd = touch.position;
-                float deltaX = touchEnd.x - touchStart.x;
-                if (Mathf.Abs(deltaX) > swipeThreshold)
-                {
-                    if (deltaX > 0)
-                    {
-                        NextFace();
-                    }
-                    else
-                    {
-                        PreviousFace();
-                    }
-                }
-                isSwiping = false;
-            }
+            float ghostY = gameManager.GhostPiece.transform.position.y;
+            finalCameraPosition.y = Mathf.Max(finalCameraPosition.y, ghostY + minVerticalMargin);
         }
+
+        // --- Compute Final Camera Rotation (Looking Downward at the Target) ---
+        Vector3 direction = effectiveTargetPosition - finalCameraPosition;
+        Vector3 horizontalDirection = new Vector3(direction.x, 0, direction.z);
+        if (horizontalDirection.sqrMagnitude < 0.001f)
+            horizontalDirection = Vector3.forward;
+        Quaternion horizontalRotation = Quaternion.LookRotation(horizontalDirection);
+        Quaternion finalRotation = Quaternion.Euler(desiredPitch, horizontalRotation.eulerAngles.y, 0);
+
+        // --- Smoothly Update the Camera's Position and Rotation ---
+        transform.position = Vector3.Lerp(transform.position, finalCameraPosition, Time.deltaTime * lerpSpeed);
+        transform.rotation = Quaternion.Lerp(transform.rotation, finalRotation, Time.deltaTime * lerpSpeed);
+    }
+
+    /// <summary>
+    /// Computes the world-space position of the bottom center of the camera's viewport,
+    /// based on the given camera position and rotation. Uses the main camera's near clip plane and vertical FOV.
+    /// </summary>
+    Vector3 ComputeViewportBottomCenter(Vector3 camPos, Quaternion camRot)
+    {
+        Camera cam = Camera.main;
+        if (cam == null)
+            return camPos;
+
+        float near = cam.nearClipPlane;
+        float fov = cam.fieldOfView; // vertical field of view in degrees
+        float nearHeight = 2 * near * Mathf.Tan(0.5f * fov * Mathf.Deg2Rad);
+        Vector3 localBottomCenter = new Vector3(0, -nearHeight / 2f, near);
+        return camPos + camRot * localBottomCenter;
     }
 }

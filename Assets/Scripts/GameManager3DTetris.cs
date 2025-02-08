@@ -11,16 +11,15 @@ public class GameManager3DTetris : MonoBehaviour
     [Header("Piece Settings")]
     [Tooltip("Array of falling piece prefabs. A random prefab is selected each time a new piece spawns.")]
     public GameObject[] fallingPiecePrefabs;
-
     [Tooltip("Time (in seconds) between downward moves when not soft-dropping.")]
     public float fallInterval = 1f;
     [Tooltip("Multiplier to reduce the fall interval when soft-dropping (holding Down Arrow).")]
     public float softDropMultiplier = 0.2f;
 
     // Grid dimensions and cell size.
-    private int gridWidth;    // Number of playable cells in X (should be 9)
+    private int gridWidth;    // Number of playable cells in X (e.g., 9)
     private int gridHeight;   // Vertical cell count
-    private int gridDepth;    // Number of playable cells in Z (should be 9)
+    private int gridDepth;    // Number of playable cells in Z (e.g., 9)
     private float cubeSize;
 
     // Playable area dimensions (inside the frame).
@@ -45,6 +44,52 @@ public class GameManager3DTetris : MonoBehaviour
     // The ghost piece (visual only) that shows where the current piece will land.
     private GameObject ghostPiece;
 
+    // --- Public Properties for External Systems ---
+    /// <summary>
+    /// Returns the grid's vertical cell count.
+    /// </summary>
+    public int GridHeight
+    {
+        get { return gridHeight; }
+    }
+
+    /// <summary>
+    /// Returns the center of the grid as (0, (gridHeight * cubeSize)/2, 0).
+    /// Assumes the grid is centered horizontally (X and Z) and that the bottom is at Y = 0.
+    /// </summary>
+    public Vector3 GridCenter
+    {
+        get { return new Vector3(0, (gridHeight * cubeSize) / 2f, 0); }
+    }
+
+    /// <summary>
+    /// Scans the grid and returns the highest (maximum Y) index that is occupied.
+    /// </summary>
+    public int GetMaxOccupiedY()
+    {
+        int maxY = 0;
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                for (int z = 0; z < gridDepth; z++)
+                {
+                    if (grid[x, y, z] != null)
+                        maxY = Mathf.Max(maxY, y);
+                }
+            }
+        }
+        return maxY;
+    }
+
+    /// <summary>
+    /// Returns the current ghost piece GameObject (if any), otherwise null.
+    /// </summary>
+    public GameObject GhostPiece
+    {
+        get { return ghostPiece; }
+    }
+
     void Start()
     {
         if (frameGrid == null)
@@ -54,12 +99,11 @@ public class GameManager3DTetris : MonoBehaviour
         }
 
         cubeSize = frameGrid.cubeSize;
-        // For a 9×9 playable grid, containerWidth and containerDepth in FrameGridManager should be 11.
         playableWidth = frameGrid.containerWidth - 2 * cubeSize;
         playableDepth = frameGrid.containerDepth - 2 * cubeSize;
 
-        gridWidth = Mathf.RoundToInt(playableWidth / cubeSize);  // Expected to be 9.
-        gridDepth = Mathf.RoundToInt(playableDepth / cubeSize);    // Expected to be 9.
+        gridWidth = Mathf.RoundToInt(playableWidth / cubeSize);
+        gridDepth = Mathf.RoundToInt(playableDepth / cubeSize);
         gridHeight = Mathf.RoundToInt(frameGrid.containerHeight / cubeSize);
 
         grid = new Transform[gridWidth, gridHeight, gridDepth];
@@ -69,11 +113,9 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
-        // Press G to log grid occupancy.
+        // Press G to log the grid occupancy.
         if (Input.GetKeyDown(KeyCode.G))
-        {
             LogGridState();
-        }
 
         if (processingLockedBlocks)
             return;
@@ -93,7 +135,6 @@ public class GameManager3DTetris : MonoBehaviour
             float effectiveFallInterval = fallInterval;
             if (Input.GetKey(KeyCode.DownArrow))
                 effectiveFallInterval = fallInterval * softDropMultiplier;
-
             if (fallTimer >= effectiveFallInterval)
             {
                 fallTimer = 0f;
@@ -162,13 +203,9 @@ public class GameManager3DTetris : MonoBehaviour
         Debug.Log(log);
     }
 
-    /// <summary>
-    /// Handles left/right movement and rotation input.
-    /// Up arrow triggers a 90° rotation clockwise about the Y axis.
-    /// (Shift-modified keys remain reserved for camera control.)
-    /// </summary>
     void HandleInput()
     {
+        // Basic input: left/right movement and rotation (about the Y axis).
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
             return;
 
@@ -184,24 +221,16 @@ public class GameManager3DTetris : MonoBehaviour
             RotatePiece();
     }
 
-    /// <summary>
-    /// Rotates the active piece 90° clockwise about the Y axis.
-    /// After rotation, the piece is snapped horizontally and vertically.
-    /// Because the pivot is at the bottom center, a Y-axis rotation preserves the base.
-    /// If the new orientation is invalid, the rotation is reverted.
-    /// </summary>
     void RotatePiece()
     {
         if (currentPiece == null)
             return;
 
         Quaternion oldRotation = currentPiece.transform.rotation;
-        // Rotate around Y axis:
+        // Rotate the active piece 90° clockwise about the Y axis.
         currentPiece.transform.Rotate(0, 90, 0, Space.World);
-
         SnapPieceHorizontally();
         SnapPieceVertically();
-
         if (!IsValidPosition(currentPiece))
         {
             currentPiece.transform.rotation = oldRotation;
@@ -214,9 +243,6 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Returns the bottom Y coordinate of the piece by combining the bounds of all its renderers.
-    /// </summary>
     float GetPieceBottomUsingRenderers(GameObject piece)
     {
         Renderer[] renderers = piece.GetComponentsInChildren<Renderer>();
@@ -224,18 +250,10 @@ public class GameManager3DTetris : MonoBehaviour
             return piece.transform.position.y;
         Bounds bounds = renderers[0].bounds;
         for (int i = 1; i < renderers.Length; i++)
-        {
             bounds.Encapsulate(renderers[i].bounds);
-        }
         return bounds.min.y;
     }
 
-    /// <summary>
-    /// Moves the active piece by the specified vector.
-    /// If the move is invalid, it is reverted.
-    /// A failed downward move locks the piece.
-    /// Horizontal moves are followed by snapping to playable grid cell centers.
-    /// </summary>
     void MovePiece(Vector3 move)
     {
         currentPiece.transform.position += move;
@@ -252,25 +270,16 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Snaps the active piece's X and Z coordinates to the nearest playable grid cell center.
-    /// The playable area spans from -playableWidth/2 to +playableWidth/2.
-    /// </summary>
     void SnapPieceHorizontally()
     {
         Vector3 pos = currentPiece.transform.position;
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
-
         float newX = Mathf.Round((pos.x + halfPlayableWidth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableWidth + cubeSize / 2f;
         float newZ = Mathf.Round((pos.z + halfPlayableDepth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableDepth + cubeSize / 2f;
         currentPiece.transform.position = new Vector3(newX, pos.y, newZ);
     }
 
-    /// <summary>
-    /// Snaps the active piece's Y coordinate to the nearest grid cell center vertically.
-    /// Y positions are aligned to whole multiples of cubeSize (0, 1, 2, ... if cubeSize is 1).
-    /// </summary>
     void SnapPieceVertically()
     {
         Vector3 pos = currentPiece.transform.position;
@@ -278,9 +287,6 @@ public class GameManager3DTetris : MonoBehaviour
         currentPiece.transform.position = new Vector3(pos.x, newY, pos.z);
     }
 
-    /// <summary>
-    /// Checks that every block in the active piece is within the playable area.
-    /// </summary>
     bool IsValidPosition(GameObject piece)
     {
         foreach (Transform block in piece.transform)
@@ -296,11 +302,6 @@ public class GameManager3DTetris : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Converts a world-space position to playable grid coordinates.
-    /// The playable area spans from -playableWidth/2 to +playableWidth/2 (and similarly for Z).
-    /// For Y, positions are divided directly by cubeSize so that cell indices are 0, 1, 2, ...
-    /// </summary>
     Vector3Int WorldToGrid(Vector3 pos)
     {
         float halfPlayableWidth = playableWidth / 2f;
@@ -311,9 +312,6 @@ public class GameManager3DTetris : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    /// <summary>
-    /// Converts playable grid coordinates back to a world-space position (the cell center).
-    /// </summary>
     Vector3 GridToWorld(Vector3Int cell)
     {
         float halfPlayableWidth = playableWidth / 2f;
@@ -324,10 +322,6 @@ public class GameManager3DTetris : MonoBehaviour
         return new Vector3(x, y, z);
     }
 
-    /// <summary>
-    /// Locks the active piece by recording its blocks in the grid and adding it to lockedGroups,
-    /// then begins line-clear and gravity processing.
-    /// </summary>
     void LockPiece()
     {
         foreach (Transform block in currentPiece.transform)
@@ -350,9 +344,6 @@ public class GameManager3DTetris : MonoBehaviour
         StartCoroutine(ProcessLockedBlocks());
     }
 
-    /// <summary>
-    /// Processes locked pieces by clearing complete lines and applying gravity, then spawns a new piece.
-    /// </summary>
     IEnumerator ProcessLockedBlocks()
     {
         processingLockedBlocks = true;
@@ -378,9 +369,6 @@ public class GameManager3DTetris : MonoBehaviour
         SpawnNewPiece();
     }
 
-    /// <summary>
-    /// Rebuilds the grid array from locked groups and detached blocks (tagged "Block").
-    /// </summary>
     void RebuildGrid()
     {
         grid = new Transform[gridWidth, gridHeight, gridDepth];
@@ -413,10 +401,6 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Checks for complete horizontal lines along the playable X and Z axes at each Y level and clears them.
-    /// Only blocks in cleared cells are destroyed; groups that lose blocks are detached.
-    /// </summary>
     bool ClearHorizontalLines()
     {
         bool clearedAny = false;
@@ -492,9 +476,6 @@ public class GameManager3DTetris : MonoBehaviour
         return clearedAny;
     }
 
-    /// <summary>
-    /// Applies gravity iteratively until no further movement occurs.
-    /// </summary>
     bool ApplyIterativeGravity()
     {
         bool anyMoved = false;
@@ -551,7 +532,7 @@ public class GameManager3DTetris : MonoBehaviour
     {
         foreach (Transform block in piece.transform)
         {
-            // Apply the piece's rotation to the block's localPosition.
+            // Apply the piece's rotation to compute the block's world position.
             Vector3 worldPos = candidatePos + piece.transform.rotation * block.localPosition;
             Vector3Int cell = WorldToGrid(worldPos);
             Debug.Log($"[VirtualPos] Checking block of {piece.name} at candidatePos {worldPos} (cell {cell})");
@@ -628,7 +609,7 @@ public class GameManager3DTetris : MonoBehaviour
         {
             Material mat = new Material(rend.material);
             Color c = mat.color;
-            c.a = 0.4f;
+            c.a = 0.4f; // Make ghost semi-transparent.
             mat.color = c;
             rend.material = mat;
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
