@@ -522,9 +522,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameGrid: {fileID: 1048888615}
   fallingPiecePrefabs:
-  - {fileID: 7949932603857005071, guid: 06529448a184346c29e1e75458d22a22, type: 3}
   - {fileID: 7949932603857005071, guid: 372099a5fdf2041328741c7b65b1c120, type: 3}
-  - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
+  - {fileID: 7949932603857005071, guid: 372099a5fdf2041328741c7b65b1c120, type: 3}
+  - {fileID: 7949932603857005071, guid: 824e1539e7f544fc4b7ea19ce7cd88a2, type: 3}
   - {fileID: 7949932603857005071, guid: 824e1539e7f544fc4b7ea19ce7cd88a2, type: 3}
   fallInterval: 1
   softDropMultiplier: 0.2

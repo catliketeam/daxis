@@ -24,7 +24,8 @@ public class GameManager3DTetris : MonoBehaviour
     private float cubeSize;
 
     // Playable area dimensions (inside the frame).
-    // For example, if containerWidth and containerDepth in FrameGridManager are 11 and cubeSize is 1, playableWidth and playableDepth become 9.
+    // For example, if containerWidth and containerDepth in FrameGridManager are 11 and cubeSize is 1,
+    // then playableWidth and playableDepth become 9.
     private float playableWidth;
     private float playableDepth;
 
@@ -113,7 +114,7 @@ public class GameManager3DTetris : MonoBehaviour
     /// Logs the occupancy of the grid to the Unity console.
     /// Each layer (Y value) is printed from top (highest Y) to bottom (Y = 0).
     /// "X" indicates a locked cell, "A" indicates a block from the active piece, and "G" indicates a ghost block.
-    /// Empty cells are indicated by ".".
+    /// Empty cells are denoted by ".".
     /// </summary>
     void LogGridState()
     {
@@ -163,7 +164,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Handles left/right movement and rotation input.
-    /// Up arrow triggers a 90° rotation clockwise about the X axis.
+    /// Up arrow triggers a 90° rotation clockwise about the Y axis.
     /// (Shift-modified keys remain reserved for camera control.)
     /// </summary>
     void HandleInput()
@@ -184,9 +185,9 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Rotates the active piece 90° clockwise about the X axis.
-    /// After rotation, it snaps horizontally and vertically.
-    /// The vertical snapping is now performed without a delta adjustment.
+    /// Rotates the active piece 90° clockwise about the Y axis.
+    /// After rotation, the piece is snapped horizontally and vertically.
+    /// Because the pivot is at the bottom center, a Y-axis rotation preserves the base.
     /// If the new orientation is invalid, the rotation is reverted.
     /// </summary>
     void RotatePiece()
@@ -195,7 +196,8 @@ public class GameManager3DTetris : MonoBehaviour
             return;
 
         Quaternion oldRotation = currentPiece.transform.rotation;
-        currentPiece.transform.Rotate(90, 0, 0, Space.World);
+        // Rotate around Y axis:
+        currentPiece.transform.Rotate(0, 90, 0, Space.World);
 
         SnapPieceHorizontally();
         SnapPieceVertically();
@@ -267,11 +269,12 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Snaps the active piece's Y coordinate to the nearest grid cell center vertically.
+    /// Y positions are aligned to whole multiples of cubeSize (0, 1, 2, ... if cubeSize is 1).
     /// </summary>
     void SnapPieceVertically()
     {
         Vector3 pos = currentPiece.transform.position;
-        float newY = Mathf.Round((pos.y + cubeSize / 2f) / cubeSize) * cubeSize - cubeSize / 2f;
+        float newY = Mathf.Floor(pos.y / cubeSize) * cubeSize;
         currentPiece.transform.position = new Vector3(pos.x, newY, pos.z);
     }
 
@@ -296,13 +299,14 @@ public class GameManager3DTetris : MonoBehaviour
     /// <summary>
     /// Converts a world-space position to playable grid coordinates.
     /// The playable area spans from -playableWidth/2 to +playableWidth/2 (and similarly for Z).
+    /// For Y, positions are divided directly by cubeSize so that cell indices are 0, 1, 2, ...
     /// </summary>
     Vector3Int WorldToGrid(Vector3 pos)
     {
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
         int x = Mathf.FloorToInt((pos.x + halfPlayableWidth) / cubeSize);
-        int y = Mathf.FloorToInt((pos.y + cubeSize / 2f) / cubeSize);
+        int y = Mathf.FloorToInt(pos.y / cubeSize);
         int z = Mathf.FloorToInt((pos.z + halfPlayableDepth) / cubeSize);
         return new Vector3Int(x, y, z);
     }
@@ -547,7 +551,8 @@ public class GameManager3DTetris : MonoBehaviour
     {
         foreach (Transform block in piece.transform)
         {
-            Vector3 worldPos = candidatePos + block.localPosition;
+            // Apply the piece's rotation to the block's localPosition.
+            Vector3 worldPos = candidatePos + piece.transform.rotation * block.localPosition;
             Vector3Int cell = WorldToGrid(worldPos);
             Debug.Log($"[VirtualPos] Checking block of {piece.name} at candidatePos {worldPos} (cell {cell})");
             if (cell.x < 0 || cell.x >= gridWidth || cell.z < 0 || cell.z >= gridDepth)
@@ -585,6 +590,24 @@ public class GameManager3DTetris : MonoBehaviour
         ghostPiece.transform.rotation = currentPiece.transform.rotation;
         Vector3 ghostPos = CalculateGhostPosition(currentPiece);
         ghostPiece.transform.position = ghostPos;
+
+        // Debug: Log only the lowest ghost child's world position and grid cell.
+        Transform lowestGhostChild = null;
+        float lowestGhostY = float.MaxValue;
+        foreach (Transform child in ghostPiece.transform)
+        {
+            if (child.position.y < lowestGhostY)
+            {
+                lowestGhostY = child.position.y;
+                lowestGhostChild = child;
+            }
+        }
+        if (lowestGhostChild != null)
+        {
+            Vector3 childWorldPos = lowestGhostChild.position;
+            Vector3Int cell = WorldToGrid(childWorldPos);
+            Debug.Log("Ghost Piece - Lowest block " + lowestGhostChild.name + " world position: " + childWorldPos + " falls into grid cell: " + cell);
+        }
     }
 
     Vector3 CalculateGhostPosition(GameObject piece)
