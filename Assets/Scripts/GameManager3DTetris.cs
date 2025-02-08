@@ -24,21 +24,21 @@ public class GameManager3DTetris : MonoBehaviour
     private float cubeSize;
 
     // Playable area dimensions (inside the frame).
-    // For example, if containerWidth = 11 and cubeSize = 1, then playableWidth = 11 - 2 = 9.
+    // For example, if containerWidth and containerDepth in FrameGridManager are 11 and cubeSize is 1, playableWidth and playableDepth become 9.
     private float playableWidth;
     private float playableDepth;
 
     // The grid stores a reference to the block (Transform) occupying each playable cell.
     private Transform[,,] grid;
 
-    // The currently falling (user-controlled) piece.
+    // The currently falling (active) piece.
     private GameObject currentPiece;
     private float fallTimer = 0f;
 
     // List of locked groups. When a piece locks, its blocks remain grouped.
     private List<GameObject> lockedGroups = new List<GameObject>();
 
-    // Flag to disable user input while processing locked blocks.
+    // Flag to disable user input during processing.
     private bool processingLockedBlocks = false;
 
     // The ghost piece (visual only) that shows where the current piece will land.
@@ -53,12 +53,9 @@ public class GameManager3DTetris : MonoBehaviour
         }
 
         cubeSize = frameGrid.cubeSize;
-        // For a 9x9 playable grid, the containerWidth and containerDepth should be set (in FrameGridManager) to 11.
+        // For a 9×9 playable grid, containerWidth and containerDepth in FrameGridManager should be 11.
         playableWidth = frameGrid.containerWidth - 2 * cubeSize;
         playableDepth = frameGrid.containerDepth - 2 * cubeSize;
-
-        Debug.Log($"containerWidth: {frameGrid.containerWidth}, containerDepth: {frameGrid.containerDepth}");
-        Debug.Log($"playableWidth: {playableWidth}, playableDepth: {playableDepth}");
 
         gridWidth = Mathf.RoundToInt(playableWidth / cubeSize);  // Expected to be 9.
         gridDepth = Mathf.RoundToInt(playableDepth / cubeSize);    // Expected to be 9.
@@ -71,6 +68,12 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
+        // Press G to log grid occupancy.
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            LogGridState();
+        }
+
         if (processingLockedBlocks)
             return;
 
@@ -107,6 +110,58 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
+    /// Logs the occupancy of the grid to the Unity console.
+    /// Each layer (Y value) is printed from top (highest Y) to bottom (Y = 0).
+    /// "X" indicates a locked cell, "A" indicates a block from the active piece, and "G" indicates a ghost block.
+    /// Empty cells are indicated by ".".
+    /// </summary>
+    void LogGridState()
+    {
+        string log = "Grid Occupancy:\n";
+        for (int y = gridHeight - 1; y >= 0; y--)
+        {
+            log += $"Layer {y}:\n";
+            for (int z = 0; z < gridDepth; z++)
+            {
+                string row = "";
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    char symbol = '.';
+                    if (grid[x, y, z] != null)
+                        symbol = 'X';
+                    if (currentPiece != null)
+                    {
+                        foreach (Transform block in currentPiece.transform)
+                        {
+                            Vector3Int cell = WorldToGrid(block.position);
+                            if (cell.x == x && cell.y == y && cell.z == z)
+                            {
+                                symbol = 'A';
+                                break;
+                            }
+                        }
+                    }
+                    if (ghostPiece != null)
+                    {
+                        foreach (Transform block in ghostPiece.transform)
+                        {
+                            Vector3Int cell = WorldToGrid(block.position);
+                            if (cell.x == x && cell.y == y && cell.z == z && symbol != 'A')
+                            {
+                                symbol = 'G';
+                                break;
+                            }
+                        }
+                    }
+                    row += symbol;
+                }
+                log += row + "\n";
+            }
+        }
+        Debug.Log(log);
+    }
+
+    /// <summary>
     /// Handles left/right movement and rotation input.
     /// Up arrow triggers a 90° rotation clockwise about the X axis.
     /// (Shift-modified keys remain reserved for camera control.)
@@ -130,6 +185,8 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Rotates the active piece 90° clockwise about the X axis.
+    /// After rotation, it snaps horizontally and vertically.
+    /// The vertical snapping is now performed without a delta adjustment.
     /// If the new orientation is invalid, the rotation is reverted.
     /// </summary>
     void RotatePiece()
@@ -141,6 +198,7 @@ public class GameManager3DTetris : MonoBehaviour
         currentPiece.transform.Rotate(90, 0, 0, Space.World);
 
         SnapPieceHorizontally();
+        SnapPieceVertically();
 
         if (!IsValidPosition(currentPiece))
         {
@@ -155,10 +213,26 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Moves the active piece by the given vector.
+    /// Returns the bottom Y coordinate of the piece by combining the bounds of all its renderers.
+    /// </summary>
+    float GetPieceBottomUsingRenderers(GameObject piece)
+    {
+        Renderer[] renderers = piece.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0)
+            return piece.transform.position.y;
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            bounds.Encapsulate(renderers[i].bounds);
+        }
+        return bounds.min.y;
+    }
+
+    /// <summary>
+    /// Moves the active piece by the specified vector.
     /// If the move is invalid, it is reverted.
     /// A failed downward move locks the piece.
-    /// Horizontal moves are followed by snapping to the playable grid cell centers.
+    /// Horizontal moves are followed by snapping to playable grid cell centers.
     /// </summary>
     void MovePiece(Vector3 move)
     {
@@ -178,20 +252,27 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Snaps the active piece's X and Z coordinates to the nearest playable grid cell center.
-    /// The playable area is defined by playableWidth and playableDepth (centered at 0).
+    /// The playable area spans from -playableWidth/2 to +playableWidth/2.
     /// </summary>
     void SnapPieceHorizontally()
     {
         Vector3 pos = currentPiece.transform.position;
-        float halfPlayableWidth = playableWidth / 2f;   // For playableWidth = 9, this is 4.5.
-        float halfPlayableDepth = playableDepth / 2f;     // Similarly 4.5.
+        float halfPlayableWidth = playableWidth / 2f;
+        float halfPlayableDepth = playableDepth / 2f;
 
-        // The centers of the playable cells should be at:
-        // X: -halfPlayableWidth + cubeSize/2, ..., halfPlayableWidth - cubeSize/2.
-        // For playableWidth = 9 and cubeSize = 1, that yields -4, -3, …, 4.
-        float newX = Mathf.Round((pos.x + halfPlayableWidth - cubeSize/2f) / cubeSize) * cubeSize - halfPlayableWidth + cubeSize/2f;
-        float newZ = Mathf.Round((pos.z + halfPlayableDepth - cubeSize/2f) / cubeSize) * cubeSize - halfPlayableDepth + cubeSize/2f;
+        float newX = Mathf.Round((pos.x + halfPlayableWidth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableWidth + cubeSize / 2f;
+        float newZ = Mathf.Round((pos.z + halfPlayableDepth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableDepth + cubeSize / 2f;
         currentPiece.transform.position = new Vector3(newX, pos.y, newZ);
+    }
+
+    /// <summary>
+    /// Snaps the active piece's Y coordinate to the nearest grid cell center vertically.
+    /// </summary>
+    void SnapPieceVertically()
+    {
+        Vector3 pos = currentPiece.transform.position;
+        float newY = Mathf.Round((pos.y + cubeSize / 2f) / cubeSize) * cubeSize - cubeSize / 2f;
+        currentPiece.transform.position = new Vector3(pos.x, newY, pos.z);
     }
 
     /// <summary>
@@ -214,7 +295,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Converts a world-space position to playable grid coordinates.
-    /// The playable area extends from -playableWidth/2 to +playableWidth/2 (and similarly for Z).
+    /// The playable area spans from -playableWidth/2 to +playableWidth/2 (and similarly for Z).
     /// </summary>
     Vector3Int WorldToGrid(Vector3 pos)
     {
@@ -240,8 +321,8 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Locks the active piece in place, recording its blocks in the grid and adding it to lockedGroups.
-    /// Then begins line-clear and gravity processing.
+    /// Locks the active piece by recording its blocks in the grid and adding it to lockedGroups,
+    /// then begins line-clear and gravity processing.
     /// </summary>
     void LockPiece()
     {
@@ -294,7 +375,7 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     /// <summary>
-    /// Rebuilds the grid from locked groups and detached blocks (tagged "Block").
+    /// Rebuilds the grid array from locked groups and detached blocks (tagged "Block").
     /// </summary>
     void RebuildGrid()
     {
@@ -551,9 +632,10 @@ public class GameManager3DTetris : MonoBehaviour
         }
         int randomIndex = Random.Range(0, fallingPiecePrefabs.Length);
         GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
-        // Spawn the new piece at the center of the playable area (which is 0,0 in X and Z).
+        // Spawn the new piece at the center of the playable area (X and Z = 0).
         Vector3 spawnPosition = new Vector3(0, gridHeight * cubeSize + cubeSize, 0);
         currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
         SnapPieceHorizontally();
+        SnapPieceVertically();
     }
 }

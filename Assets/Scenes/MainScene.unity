@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
-  distance: 22
+  distance: 26
   swipeThreshold: 50
 --- !u!1 &410087039
 GameObject:
@@ -471,12 +471,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62147eedaf4ac4d778b2287d54f4ebdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  containerWidth: 10
-  containerDepth: 10
+  containerWidth: 11
+  containerDepth: 11
   containerHeight: 20
   cubeSize: 1
   cellPrefab: {fileID: 679379949076120610, guid: e8a6505fbfbe14f7099f938b2fc02dec, type: 3}
-  framePadding: 0.5
 --- !u!4 &1048888616
 Transform:
   m_ObjectHideFlags: 0
@@ -523,9 +522,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   frameGrid: {fileID: 1048888615}
   fallingPiecePrefabs:
-  - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
-  - {fileID: 7949932603857005071, guid: ccbcf1adb26764e6493d0dbcfea61a30, type: 3}
+  - {fileID: 7949932603857005071, guid: 06529448a184346c29e1e75458d22a22, type: 3}
   - {fileID: 7949932603857005071, guid: 372099a5fdf2041328741c7b65b1c120, type: 3}
+  - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
+  - {fileID: 7949932603857005071, guid: 824e1539e7f544fc4b7ea19ce7cd88a2, type: 3}
   fallInterval: 1
   softDropMultiplier: 0.2
 --- !u!4 &1407419148
