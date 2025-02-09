@@ -23,8 +23,6 @@ public class GameManager3DTetris : MonoBehaviour
     private float cubeSize;
 
     // Playable area dimensions (inside the frame).
-    // For example, if containerWidth and containerDepth in FrameGridManager are 11 and cubeSize is 1,
-    // then playableWidth and playableDepth become 9.
     private float playableWidth;
     private float playableDepth;
 
@@ -44,7 +42,16 @@ public class GameManager3DTetris : MonoBehaviour
     // The ghost piece (visual only) that shows where the current piece will land.
     private GameObject ghostPiece;
 
-    // --- Public Properties for External Systems ---
+    //////////////////////////////////////////////////////////////////////////////
+    // MOBILE INPUT VARIABLES (for piece movement)
+    //////////////////////////////////////////////////////////////////////////////
+    private Vector2 touchStartPos;       // Stores the starting position of a touch
+    public float swipeThreshold = 100f;    // Swipe threshold in pixels
+
+    //////////////////////////////////////////////////////////////////////////////
+    // PUBLIC ACCESSORS FOR EXTERNAL SYSTEMS
+    //////////////////////////////////////////////////////////////////////////////
+
     /// <summary>
     /// Returns the grid's vertical cell count.
     /// </summary>
@@ -113,7 +120,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     void Update()
     {
-        // Press G to log the grid occupancy.
+        // Press G to log grid occupancy.
         if (Input.GetKeyDown(KeyCode.G))
             LogGridState();
 
@@ -123,6 +130,7 @@ public class GameManager3DTetris : MonoBehaviour
         if (currentPiece != null)
         {
             HandleInput();
+
             UpdateGhostPiece();
 
             if (Input.GetKeyDown(KeyCode.Space))
@@ -153,7 +161,7 @@ public class GameManager3DTetris : MonoBehaviour
 
     /// <summary>
     /// Logs the occupancy of the grid to the Unity console.
-    /// Each layer (Y value) is printed from top (highest Y) to bottom (Y = 0).
+    /// Each layer (Y) is printed from top (highest Y) to bottom (Y = 0).
     /// "X" indicates a locked cell, "A" indicates a block from the active piece, and "G" indicates a ghost block.
     /// Empty cells are denoted by ".".
     /// </summary>
@@ -203,22 +211,89 @@ public class GameManager3DTetris : MonoBehaviour
         Debug.Log(log);
     }
 
+    /// <summary>
+    /// Handles input for moving, rotating, and slamming the active piece.
+    /// Desktop input uses keyboard keys.
+    /// On mobile:
+    ///   - A tap on the left/right halves moves the piece left/right.
+    ///   - A vertical swipe upward rotates the piece.
+    ///   - A vertical swipe downward slams the piece down.
+    /// </summary>
     void HandleInput()
     {
-        // Basic input: left/right movement and rotation (about the Y axis).
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-            return;
+        if (Application.isMobilePlatform)
+        {
+            // Process mobile touch input.
+            if (Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+                if (touch.phase == TouchPhase.Began)
+                {
+                    touchStartPos = touch.position;
+                }
+                else if (touch.phase == TouchPhase.Ended)
+                {
+                    Vector2 delta = touch.position - touchStartPos;
+                    // Determine if vertical swipe is dominant.
+                    if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x) && Mathf.Abs(delta.y) >= swipeThreshold)
+                    {
+                        if (delta.y > 0)
+                        {
+                            // Swipe upward: rotate piece.
+                            RotatePiece();
+                        }
+                        else
+                        {
+                            // Swipe downward: slam piece.
+                            SlamPiece();
+                        }
+                    }
+                    else if (Mathf.Abs(delta.x) < 10f && Mathf.Abs(delta.y) < 10f)
+                    {
+                        // Minimal movement = tap. Determine left/right based on tap position.
+                        // Use the EffectiveRight from CameraController.
+                        CameraController camController = Camera.main.GetComponent<CameraController>();
+                        Vector3 effectiveRight;
+                        if (camController != null)
+                            effectiveRight = camController.EffectiveRight;
+                        else
+                        {
+                            effectiveRight = Camera.main.transform.right;
+                            effectiveRight.y = 0;
+                            effectiveRight.Normalize();
+                        }
+                        if (touch.position.x < Screen.width / 2)
+                            MovePiece(-effectiveRight * cubeSize);
+                        else
+                            MovePiece(effectiveRight * cubeSize);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Desktop input: process piece movement if SHIFT is not held (to avoid conflicting with camera flips).
+            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                return;
 
-        Vector3 cameraRight = Camera.main.transform.right;
-        cameraRight.y = 0;
-        cameraRight.Normalize();
+            CameraController camController = Camera.main.GetComponent<CameraController>();
+            Vector3 effectiveRight;
+            if (camController != null)
+                effectiveRight = camController.EffectiveRight;
+            else
+            {
+                effectiveRight = Camera.main.transform.right;
+                effectiveRight.y = 0;
+                effectiveRight.Normalize();
+            }
 
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-            MovePiece(-cameraRight * cubeSize);
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
-            MovePiece(cameraRight * cubeSize);
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
-            RotatePiece();
+            if (Input.GetKeyDown(KeyCode.LeftArrow))
+                MovePiece(-effectiveRight * cubeSize);
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
+                MovePiece(effectiveRight * cubeSize);
+            else if (Input.GetKeyDown(KeyCode.UpArrow))
+                RotatePiece();
+        }
     }
 
     void RotatePiece()
@@ -532,7 +607,6 @@ public class GameManager3DTetris : MonoBehaviour
     {
         foreach (Transform block in piece.transform)
         {
-            // Apply the piece's rotation to compute the block's world position.
             Vector3 worldPos = candidatePos + piece.transform.rotation * block.localPosition;
             Vector3Int cell = WorldToGrid(worldPos);
             Debug.Log($"[VirtualPos] Checking block of {piece.name} at candidatePos {worldPos} (cell {cell})");
@@ -571,8 +645,6 @@ public class GameManager3DTetris : MonoBehaviour
         ghostPiece.transform.rotation = currentPiece.transform.rotation;
         Vector3 ghostPos = CalculateGhostPosition(currentPiece);
         ghostPiece.transform.position = ghostPos;
-
-        // Debug: Log only the lowest ghost child's world position and grid cell.
         Transform lowestGhostChild = null;
         float lowestGhostY = float.MaxValue;
         foreach (Transform child in ghostPiece.transform)
@@ -609,7 +681,7 @@ public class GameManager3DTetris : MonoBehaviour
         {
             Material mat = new Material(rend.material);
             Color c = mat.color;
-            c.a = 0.4f; // Make ghost semi-transparent.
+            c.a = 0.4f;
             mat.color = c;
             rend.material = mat;
             rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -636,7 +708,6 @@ public class GameManager3DTetris : MonoBehaviour
         }
         int randomIndex = Random.Range(0, fallingPiecePrefabs.Length);
         GameObject selectedPrefab = fallingPiecePrefabs[randomIndex];
-        // Spawn the new piece at the center of the playable area (X and Z = 0).
         Vector3 spawnPosition = new Vector3(0, gridHeight * cubeSize + cubeSize, 0);
         currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
         SnapPieceHorizontally();

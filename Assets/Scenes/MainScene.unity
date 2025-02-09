@@ -280,6 +280,12 @@ MonoBehaviour:
   fullPitch: 60
   lerpSpeed: 2
   desiredBottomEdge: 1
+  minVerticalMargin: 5
+  discreteYawStep: 90
+  yawLerpSpeed: 5
+  swipeThreshold: 100
+  flipZoomOutAmount: 5
+  flipPhaseDuration: 0.166
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -531,9 +537,10 @@ MonoBehaviour:
   frameGrid: {fileID: 1048888615}
   fallingPiecePrefabs:
   - {fileID: 7949932603857005071, guid: 372099a5fdf2041328741c7b65b1c120, type: 3}
-  - {fileID: 7949932603857005071, guid: dfc2190ec0f704fdabcb80ab40399f58, type: 3}
-  - {fileID: 7949932603857005071, guid: 824e1539e7f544fc4b7ea19ce7cd88a2, type: 3}
-  - {fileID: 7949932603857005071, guid: 06529448a184346c29e1e75458d22a22, type: 3}
+  - {fileID: 7949932603857005071, guid: 5f23dd063a9d34144bd8b0c8f1074858, type: 3}
+  - {fileID: 7949932603857005071, guid: d10eddc84afac4be99a9dd6dba0a9bd4, type: 3}
+  - {fileID: 7949932603857005071, guid: d10eddc84afac4be99a9dd6dba0a9bd4, type: 3}
+  - {fileID: 7949932603857005071, guid: 5f23dd063a9d34144bd8b0c8f1074858, type: 3}
   fallInterval: 1
   softDropMultiplier: 0.2
 --- !u!4 &1407419148
