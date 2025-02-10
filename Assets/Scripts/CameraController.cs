@@ -53,7 +53,7 @@ public class CameraController : MonoBehaviour
 
     /// <summary>
     /// Returns the effective right vector based on the current final yaw (frame yaw plus manualYaw).
-    /// This is used by GameManager3DTetris for moving pieces horizontally.
+    /// Used by GameManager3DTetris for moving pieces horizontally.
     /// </summary>
     public Vector3 EffectiveRight {
         get {
@@ -65,7 +65,7 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
-        // Automatically assign frameTransform if not set.
+        // Auto-assign frameTransform if not set.
         if (frameTransform == null && gameManager != null && gameManager.frameGrid != null)
             frameTransform = gameManager.frameGrid.transform;
     }
@@ -87,7 +87,7 @@ public class CameraController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.RightArrow))
                 inputDelta = -discreteYawStep;
         }
-        // (Note: Mobile double tap detection is removed so that on mobile the camera flip will be triggered by a double-finger swipe handled in GameManager3DTetris.)
+        // (Mobile double-tap detection is removed; mobile camera flips will be triggered via double-finger swipes handled in GameManager3DTetris.)
 
         if (Mathf.Abs(inputDelta) > 0.001f)
         {

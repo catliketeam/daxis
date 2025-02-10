@@ -46,18 +46,26 @@ public class GameManager3DTetris : MonoBehaviour
     private Vector2 touchStartPos;
     public float swipeThreshold = 100f;
 
+    // For press-and-hold slam gesture.
+    private float touchStartTime = 0f;
+    private bool isSlamTriggered = false;
+
     // PRIVATE FLAG to ensure two-finger gesture registers only once per gesture.
     private bool twoFingerSwipeRegistered = false;
 
     // PUBLIC ACCESSORS
     public int GridHeight { get { return gridHeight; } }
     public Vector3 GridCenter { get { return new Vector3(0, (gridHeight * cubeSize) / 2f, 0); } }
-    public int GetMaxOccupiedY() {
+    public int GetMaxOccupiedY()
+    {
         int maxY = 0;
-        for (int x = 0; x < gridWidth; x++) {
-            for (int y = 0; y < gridHeight; y++) {
-                for (int z = 0; z < gridDepth; z++) {
-                    if (grid[x,y,z] != null)
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                for (int z = 0; z < gridDepth; z++)
+                {
+                    if (grid[x, y, z] != null)
                         maxY = Mathf.Max(maxY, y);
                 }
             }
@@ -67,29 +75,39 @@ public class GameManager3DTetris : MonoBehaviour
     public GameObject GhostPiece { get { return ghostPiece; } }
 
     // LogGridState: Logs the occupancy of the grid to the Unity console.
-    void LogGridState() {
+    void LogGridState()
+    {
         string log = "Grid Occupancy:\n";
-        for (int y = gridHeight - 1; y >= 0; y--) {
+        for (int y = gridHeight - 1; y >= 0; y--)
+        {
             log += $"Layer {y}:\n";
-            for (int z = 0; z < gridDepth; z++) {
+            for (int z = 0; z < gridDepth; z++)
+            {
                 string row = "";
-                for (int x = 0; x < gridWidth; x++) {
+                for (int x = 0; x < gridWidth; x++)
+                {
                     char symbol = '.';
-                    if (grid[x,y,z] != null)
+                    if (grid[x, y, z] != null)
                         symbol = 'X';
-                    if (currentPiece != null) {
-                        foreach (Transform block in currentPiece.transform) {
+                    if (currentPiece != null)
+                    {
+                        foreach (Transform block in currentPiece.transform)
+                        {
                             Vector3Int cell = WorldToGrid(block.position);
-                            if (cell.x == x && cell.y == y && cell.z == z) {
+                            if (cell.x == x && cell.y == y && cell.z == z)
+                            {
                                 symbol = 'A';
                                 break;
                             }
                         }
                     }
-                    if (ghostPiece != null) {
-                        foreach (Transform block in ghostPiece.transform) {
+                    if (ghostPiece != null)
+                    {
+                        foreach (Transform block in ghostPiece.transform)
+                        {
                             Vector3Int cell = WorldToGrid(block.position);
-                            if (cell.x == x && cell.y == y && cell.z == z && symbol != 'A') {
+                            if (cell.x == x && cell.y == y && cell.z == z && symbol != 'A')
+                            {
                                 symbol = 'G';
                                 break;
                             }
@@ -103,8 +121,10 @@ public class GameManager3DTetris : MonoBehaviour
         Debug.Log(log);
     }
 
-    void Start() {
-        if (frameGrid == null) {
+    void Start()
+    {
+        if (frameGrid == null)
+        {
             Debug.LogError("FrameGridManager reference not set on GameManager3DTetris!");
             return;
         }
@@ -118,15 +138,18 @@ public class GameManager3DTetris : MonoBehaviour
         SpawnNewPiece();
     }
 
-    void Update() {
+    void Update()
+    {
         if (Input.GetKeyDown(KeyCode.G))
             LogGridState();
         if (processingLockedBlocks)
             return;
-        if (currentPiece != null) {
+        if (currentPiece != null)
+        {
             HandleInput();
             UpdateGhostPiece();
-            if (Input.GetKeyDown(KeyCode.Space)) {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
                 SlamPiece();
                 return;
             }
@@ -134,30 +157,42 @@ public class GameManager3DTetris : MonoBehaviour
             float effectiveFallInterval = fallInterval;
             if (Input.GetKey(KeyCode.DownArrow))
                 effectiveFallInterval = fallInterval * softDropMultiplier;
-            if (fallTimer >= effectiveFallInterval) {
+            if (fallTimer >= effectiveFallInterval)
+            {
                 fallTimer = 0f;
                 MovePiece(Vector3.down * cubeSize);
             }
-        } else {
-            if (ghostPiece != null) {
+        }
+        else
+        {
+            if (ghostPiece != null)
+            {
                 Destroy(ghostPiece);
                 ghostPiece = null;
             }
         }
     }
 
-    void HandleInput() {
-        if (Application.isMobilePlatform) {
+    // --- Modified Mobile Input Handling ---
+    void HandleInput()
+    {
+        if (Application.isMobilePlatform)
+        {
             // Process two-finger gesture for camera flip.
-            if (Input.touchCount >= 2) {
-                if (!twoFingerSwipeRegistered) {
+            if (Input.touchCount >= 2)
+            {
+                if (!twoFingerSwipeRegistered)
+                {
                     Touch touch0 = Input.GetTouch(0);
                     Touch touch1 = Input.GetTouch(1);
-                    if (touch0.phase == TouchPhase.Moved && touch1.phase == TouchPhase.Moved) {
+                    if (touch0.phase == TouchPhase.Moved && touch1.phase == TouchPhase.Moved)
+                    {
                         float avgDeltaX = (touch0.deltaPosition.x + touch1.deltaPosition.x) / 2f;
-                        if (Mathf.Abs(avgDeltaX) >= 50f) { // Threshold; adjust as needed.
+                        if (Mathf.Abs(avgDeltaX) >= 50f) // Threshold; adjust as needed.
+                        {
                             CameraController camController = Camera.main.GetComponent<CameraController>();
-                            if (camController != null) {
+                            if (camController != null)
+                            {
                                 float flipDelta = (avgDeltaX > 0) ? camController.discreteYawStep : -camController.discreteYawStep;
                                 camController.EnqueueCameraFlip(flipDelta);
                             }
@@ -166,42 +201,79 @@ public class GameManager3DTetris : MonoBehaviour
                     }
                 }
                 return; // Do not process one-finger gestures if two or more touches are active.
-            } else {
+            }
+            else
+            {
                 // Reset flag when fewer than two touches.
                 twoFingerSwipeRegistered = false;
             }
+
             // Process one-finger gesture.
-            if (Input.touchCount == 1) {
+            if (Input.touchCount == 1)
+            {
                 Touch touch = Input.GetTouch(0);
-                if (touch.phase == TouchPhase.Began) {
+                if (touch.phase == TouchPhase.Began)
+                {
                     touchStartPos = touch.position;
-                } else if (touch.phase == TouchPhase.Ended) {
+                    touchStartTime = Time.time;
+                    isSlamTriggered = false;
+                }
+                // Check for press-and-hold slam gesture.
+                else if ((touch.phase == TouchPhase.Stationary || (touch.phase == TouchPhase.Moved && (touch.position - touchStartPos).magnitude < 10f)) && !isSlamTriggered)
+                {
+                    if (Time.time - touchStartTime >= 1.0f) // 1-second hold threshold.
+                    {
+                        SlamPiece();
+                        isSlamTriggered = true;
+                    }
+                }
+                else if (touch.phase == TouchPhase.Ended)
+                {
+                    // If slam already triggered via hold, do nothing.
+                    if (isSlamTriggered)
+                        return;
+
                     Vector2 delta = touch.position - touchStartPos;
-                    // If vertical swipe downward, slam the piece.
-                    if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x) && Mathf.Abs(delta.y) >= swipeThreshold) {
-                        if (delta.y < 0)
-                            SlamPiece();
-                        // Vertical swipe upward does nothing (rotation comes from a tap).
-                    } else if (Mathf.Abs(delta.x) >= swipeThreshold && Mathf.Abs(delta.x) > Mathf.Abs(delta.y)) {
+                    // Instead of slamming, vertical swipes now move the piece along the depth axis.
+                    if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x) && Mathf.Abs(delta.y) >= swipeThreshold)
+                    {
+                        // Compute effective depth: project the camera's forward vector onto the XZ plane.
+                        Vector3 effectiveDepth = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
+                        if (delta.y > 0)
+                            MovePiece(effectiveDepth * cubeSize);
+                        else
+                            MovePiece(-effectiveDepth * cubeSize);
+                    }
+                    // Horizontal swipe: move the piece.
+                    else if (Mathf.Abs(delta.x) >= swipeThreshold && Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
+                    {
                         CameraController camController = Camera.main.GetComponent<CameraController>();
                         Vector3 effectiveRight = (camController != null) ? camController.EffectiveRight : Camera.main.transform.right;
-                        effectiveRight.y = 0; effectiveRight.Normalize();
+                        effectiveRight.y = 0;
+                        effectiveRight.Normalize();
                         if (delta.x > 0)
                             MovePiece(effectiveRight * cubeSize);
                         else
                             MovePiece(-effectiveRight * cubeSize);
-                    } else if (Mathf.Abs(delta.x) < 10f && Mathf.Abs(delta.y) < 10f) {
+                    }
+                    // Minimal movement: treat as a tap for rotation.
+                    else if (Mathf.Abs(delta.x) < 10f && Mathf.Abs(delta.y) < 10f)
+                    {
                         if (singleTapCoroutine == null)
                             singleTapCoroutine = StartCoroutine(HandleSingleTap());
                     }
                 }
             }
-        } else {
+        }
+        else
+        {
+            // Desktop Input.
             if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
                 return;
             CameraController camController = Camera.main.GetComponent<CameraController>();
             Vector3 effectiveRight = (camController != null) ? camController.EffectiveRight : Camera.main.transform.right;
-            effectiveRight.y = 0; effectiveRight.Normalize();
+            effectiveRight.y = 0;
+            effectiveRight.Normalize();
             if (Input.GetKeyDown(KeyCode.LeftArrow))
                 MovePiece(-effectiveRight * cubeSize);
             else if (Input.GetKeyDown(KeyCode.RightArrow))
@@ -212,13 +284,15 @@ public class GameManager3DTetris : MonoBehaviour
     }
 
     private Coroutine singleTapCoroutine;
-    private IEnumerator HandleSingleTap() {
+    private IEnumerator HandleSingleTap()
+    {
         yield return new WaitForSeconds(0.3f);
         RotatePiece();
         singleTapCoroutine = null;
     }
 
-    void RotatePiece() {
+    void RotatePiece()
+    {
         if (currentPiece == null)
             return;
         Quaternion oldRotation = currentPiece.transform.rotation;
@@ -227,14 +301,16 @@ public class GameManager3DTetris : MonoBehaviour
         SnapPieceVertically();
         if (!IsValidPosition(currentPiece))
             currentPiece.transform.rotation = oldRotation;
-        else {
+        else
+        {
             if (ghostPiece != null)
                 Destroy(ghostPiece);
             UpdateGhostPiece();
         }
     }
 
-    float GetPieceBottomUsingRenderers(GameObject piece) {
+    float GetPieceBottomUsingRenderers(GameObject piece)
+    {
         Renderer[] renderers = piece.GetComponentsInChildren<Renderer>();
         if (renderers.Length == 0)
             return piece.transform.position.y;
@@ -244,19 +320,24 @@ public class GameManager3DTetris : MonoBehaviour
         return bounds.min.y;
     }
 
-    void MovePiece(Vector3 move) {
+    void MovePiece(Vector3 move)
+    {
         currentPiece.transform.position += move;
-        if (!IsValidPosition(currentPiece)) {
+        if (!IsValidPosition(currentPiece))
+        {
             currentPiece.transform.position -= move;
             if (move == Vector3.down * cubeSize)
                 LockPiece();
-        } else {
+        }
+        else
+        {
             if (move != Vector3.down * cubeSize)
                 SnapPieceHorizontally();
         }
     }
 
-    void SnapPieceHorizontally() {
+    void SnapPieceHorizontally()
+    {
         Vector3 pos = currentPiece.transform.position;
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
@@ -265,14 +346,17 @@ public class GameManager3DTetris : MonoBehaviour
         currentPiece.transform.position = new Vector3(newX, pos.y, newZ);
     }
 
-    void SnapPieceVertically() {
+    void SnapPieceVertically()
+    {
         Vector3 pos = currentPiece.transform.position;
         float newY = Mathf.Floor(pos.y/cubeSize)*cubeSize;
         currentPiece.transform.position = new Vector3(pos.x, newY, pos.z);
     }
 
-    bool IsValidPosition(GameObject piece) {
-        foreach (Transform block in piece.transform) {
+    bool IsValidPosition(GameObject piece)
+    {
+        foreach (Transform block in piece.transform)
+        {
             Vector3Int cell = WorldToGrid(block.position);
             if (cell.x < 0 || cell.x >= gridWidth || cell.z < 0 || cell.z >= gridDepth)
                 return false;
@@ -284,7 +368,8 @@ public class GameManager3DTetris : MonoBehaviour
         return true;
     }
 
-    Vector3Int WorldToGrid(Vector3 pos) {
+    Vector3Int WorldToGrid(Vector3 pos)
+    {
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
         int x = Mathf.FloorToInt((pos.x + halfPlayableWidth)/cubeSize);
@@ -293,7 +378,8 @@ public class GameManager3DTetris : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    Vector3 GridToWorld(Vector3Int cell) {
+    Vector3 GridToWorld(Vector3Int cell)
+    {
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
         float x = cell.x * cubeSize - halfPlayableWidth + cubeSize/2f;
@@ -302,8 +388,10 @@ public class GameManager3DTetris : MonoBehaviour
         return new Vector3(x, y, z);
     }
 
-    void LockPiece() {
-        foreach (Transform block in currentPiece.transform) {
+    void LockPiece()
+    {
+        foreach (Transform block in currentPiece.transform)
+        {
             Vector3Int cell = WorldToGrid(block.position);
             if (cell.x >= 0 && cell.x < gridWidth &&
                 cell.y >= 0 && cell.y < gridHeight &&
@@ -314,38 +402,47 @@ public class GameManager3DTetris : MonoBehaviour
         }
         lockedGroups.Add(currentPiece);
         currentPiece = null;
-        if (ghostPiece != null) {
+        if (ghostPiece != null)
+        {
             Destroy(ghostPiece);
             ghostPiece = null;
         }
         StartCoroutine(ProcessLockedBlocks());
     }
 
-    IEnumerator ProcessLockedBlocks() {
+    IEnumerator ProcessLockedBlocks()
+    {
         processingLockedBlocks = true;
         bool changesMade;
-        do {
+        do
+        {
             bool linesCleared = ClearHorizontalLines();
-            if (linesCleared) {
+            if (linesCleared)
+            {
                 yield return new WaitForSeconds(0.5f);
                 RebuildGrid();
             }
             bool gravityApplied = false;
-            while (ApplyIterativeGravity()) {
+            while (ApplyIterativeGravity())
+            {
                 gravityApplied = true;
                 yield return new WaitForSeconds(0.1f);
             }
             changesMade = linesCleared || gravityApplied;
-        } while (changesMade);
+        }
+        while (changesMade);
         RebuildGrid();
         processingLockedBlocks = false;
         SpawnNewPiece();
     }
 
-    void RebuildGrid() {
+    void RebuildGrid()
+    {
         grid = new Transform[gridWidth, gridHeight, gridDepth];
-        foreach (GameObject group in lockedGroups) {
-            foreach (Transform block in group.transform) {
+        foreach (GameObject group in lockedGroups)
+        {
+            foreach (Transform block in group.transform)
+            {
                 Vector3Int cell = WorldToGrid(block.position);
                 if (cell.x >= 0 && cell.x < gridWidth &&
                     cell.y >= 0 && cell.y < gridHeight &&
@@ -356,8 +453,10 @@ public class GameManager3DTetris : MonoBehaviour
             }
         }
         GameObject[] detachedBlocks = GameObject.FindGameObjectsWithTag("Block");
-        foreach (GameObject blockObj in detachedBlocks) {
-            if (blockObj.transform.parent == null || !lockedGroups.Contains(blockObj.transform.parent.gameObject)) {
+        foreach (GameObject blockObj in detachedBlocks)
+        {
+            if (blockObj.transform.parent == null || !lockedGroups.Contains(blockObj.transform.parent.gameObject))
+            {
                 Vector3Int cell = WorldToGrid(blockObj.transform.position);
                 if (cell.x >= 0 && cell.x < gridWidth &&
                     cell.y >= 0 && cell.y < gridHeight &&
@@ -369,43 +468,56 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    bool ClearHorizontalLines() {
+    bool ClearHorizontalLines()
+    {
         bool clearedAny = false;
         HashSet<Vector3Int> cellsToClear = new HashSet<Vector3Int>();
         HashSet<GameObject> groupsToDetach = new HashSet<GameObject>();
 
-        for (int y = 0; y < gridHeight; y++) {
-            for (int z = 0; z < gridDepth; z++) {
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int z = 0; z < gridDepth; z++)
+            {
                 bool complete = true;
-                for (int x = 0; x < gridWidth; x++) {
-                    if (grid[x,y,z] == null) {
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    if (grid[x, y, z] == null)
+                    {
                         complete = false;
                         break;
                     }
                 }
-                if (complete) {
+                if (complete)
+                {
                     for (int x = 0; x < gridWidth; x++)
                         cellsToClear.Add(new Vector3Int(x, y, z));
                 }
             }
         }
-        for (int y = 0; y < gridHeight; y++) {
-            for (int x = 0; x < gridWidth; x++) {
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
                 bool complete = true;
-                for (int z = 0; z < gridDepth; z++) {
-                    if (grid[x,y,z] == null) {
+                for (int z = 0; z < gridDepth; z++)
+                {
+                    if (grid[x, y, z] == null)
+                    {
                         complete = false;
                         break;
                     }
                 }
-                if (complete) {
+                if (complete)
+                {
                     for (int z = 0; z < gridDepth; z++)
                         cellsToClear.Add(new Vector3Int(x, y, z));
                 }
             }
         }
-        foreach (Vector3Int cell in cellsToClear) {
-            if (grid[cell.x, cell.y, cell.z] != null) {
+        foreach (Vector3Int cell in cellsToClear)
+        {
+            if (grid[cell.x, cell.y, cell.z] != null)
+            {
                 Transform block = grid[cell.x, cell.y, cell.z];
                 GameObject parentGroup = (block.parent != null) ? block.parent.gameObject : null;
                 Destroy(block.gameObject);
@@ -415,11 +527,13 @@ public class GameManager3DTetris : MonoBehaviour
                     groupsToDetach.Add(parentGroup);
             }
         }
-        foreach (GameObject group in groupsToDetach) {
+        foreach (GameObject group in groupsToDetach)
+        {
             List<Transform> children = new List<Transform>();
             foreach (Transform child in group.transform)
                 children.Add(child);
-            foreach (Transform child in children) {
+            foreach (Transform child in children)
+            {
                 child.SetParent(null);
                 child.gameObject.tag = "Block";
             }
@@ -429,20 +543,27 @@ public class GameManager3DTetris : MonoBehaviour
         return clearedAny;
     }
 
-    bool ApplyIterativeGravity() {
+    bool ApplyIterativeGravity()
+    {
         bool anyMoved = false;
         List<GameObject> groupsThatCanMove = new List<GameObject>();
-        foreach (GameObject group in lockedGroups) {
+        foreach (GameObject group in lockedGroups)
+        {
             if (IsValidVirtualPosition(group, group.transform.position + Vector3.down * cubeSize))
                 groupsThatCanMove.Add(group);
         }
         List<Transform> detachedThatCanMove = new List<Transform>();
-        for (int x = 0; x < gridWidth; x++) {
-            for (int y = 0; y < gridHeight; y++) {
-                for (int z = 0; z < gridDepth; z++) {
-                    if (grid[x, y, z] != null) {
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                for (int z = 0; z < gridDepth; z++)
+                {
+                    if (grid[x, y, z] != null)
+                    {
                         Transform block = grid[x, y, z];
-                        if (block.parent == null) {
+                        if (block.parent == null)
+                        {
                             if (IsValidVirtualPositionForBlock(block, block.position + Vector3.down * cubeSize))
                                 detachedThatCanMove.Add(block);
                         }
@@ -450,7 +571,8 @@ public class GameManager3DTetris : MonoBehaviour
                 }
             }
         }
-        if (groupsThatCanMove.Count > 0 || detachedThatCanMove.Count > 0) {
+        if (groupsThatCanMove.Count > 0 || detachedThatCanMove.Count > 0)
+        {
             foreach (GameObject group in groupsThatCanMove)
                 group.transform.position += Vector3.down * cubeSize;
             foreach (Transform block in detachedThatCanMove)
@@ -461,7 +583,8 @@ public class GameManager3DTetris : MonoBehaviour
         return anyMoved;
     }
 
-    bool IsValidVirtualPositionForBlock(Transform block, Vector3 candidatePos) {
+    bool IsValidVirtualPositionForBlock(Transform block, Vector3 candidatePos)
+    {
         Vector3Int cell = WorldToGrid(candidatePos);
         if (cell.x < 0 || cell.x >= gridWidth || cell.z < 0 || cell.z >= gridDepth)
             return false;
@@ -472,8 +595,10 @@ public class GameManager3DTetris : MonoBehaviour
         return true;
     }
 
-    bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos) {
-        foreach (Transform block in piece.transform) {
+    bool IsValidVirtualPosition(GameObject piece, Vector3 candidatePos)
+    {
+        foreach (Transform block in piece.transform)
+        {
             Vector3 worldPos = candidatePos + piece.transform.rotation * block.localPosition;
             Vector3Int cell = WorldToGrid(worldPos);
             Debug.Log($"[VirtualPos] Checking block of {piece.name} at candidatePos {worldPos} (cell {cell})");
@@ -481,8 +606,10 @@ public class GameManager3DTetris : MonoBehaviour
                 return false;
             if (cell.y < 0)
                 return false;
-            if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null) {
-                if (!grid[cell.x, cell.y, cell.z].IsChildOf(piece.transform)) {
+            if (cell.y < gridHeight && grid[cell.x, cell.y, cell.z] != null)
+            {
+                if (!grid[cell.x, cell.y, cell.z].IsChildOf(piece.transform))
+                {
                     Debug.Log($"[VirtualPos] Cell {cell} is occupied by {grid[cell.x, cell.y, cell.z].name} (not part of {piece.name})");
                     return false;
                 }
@@ -491,15 +618,19 @@ public class GameManager3DTetris : MonoBehaviour
         return true;
     }
 
-    void UpdateGhostPiece() {
-        if (currentPiece == null) {
-            if (ghostPiece != null) {
+    void UpdateGhostPiece()
+    {
+        if (currentPiece == null)
+        {
+            if (ghostPiece != null)
+            {
                 Destroy(ghostPiece);
                 ghostPiece = null;
             }
             return;
         }
-        if (ghostPiece == null) {
+        if (ghostPiece == null)
+        {
             ghostPiece = Instantiate(currentPiece);
             MakeGhost(ghostPiece);
         }
@@ -508,31 +639,38 @@ public class GameManager3DTetris : MonoBehaviour
         ghostPiece.transform.position = ghostPos;
         Transform lowestGhostChild = null;
         float lowestGhostY = float.MaxValue;
-        foreach (Transform child in ghostPiece.transform) {
-            if (child.position.y < lowestGhostY) {
+        foreach (Transform child in ghostPiece.transform)
+        {
+            if (child.position.y < lowestGhostY)
+            {
                 lowestGhostY = child.position.y;
                 lowestGhostChild = child;
             }
         }
-        if (lowestGhostChild != null) {
+        if (lowestGhostChild != null)
+        {
             Vector3 childWorldPos = lowestGhostChild.position;
             Vector3Int cell = WorldToGrid(childWorldPos);
             Debug.Log("Ghost Piece - Lowest block " + lowestGhostChild.name + " world position: " + childWorldPos + " falls into grid cell: " + cell);
         }
     }
 
-    Vector3 CalculateGhostPosition(GameObject piece) {
+    Vector3 CalculateGhostPosition(GameObject piece)
+    {
         Vector3 candidatePos = piece.transform.position;
-        while (IsValidVirtualPosition(piece, candidatePos)) {
+        while (IsValidVirtualPosition(piece, candidatePos))
+        {
             candidatePos += Vector3.down * cubeSize;
         }
         candidatePos += Vector3.up * cubeSize;
         return candidatePos;
     }
 
-    void MakeGhost(GameObject ghost) {
+    void MakeGhost(GameObject ghost)
+    {
         Renderer[] renderers = ghost.GetComponentsInChildren<Renderer>();
-        foreach (Renderer rend in renderers) {
+        foreach (Renderer rend in renderers)
+        {
             Material mat = new Material(rend.material);
             Color c = mat.color;
             c.a = 0.4f;
@@ -543,16 +681,20 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    void SlamPiece() {
-        if (currentPiece != null) {
+    void SlamPiece()
+    {
+        if (currentPiece != null)
+        {
             Vector3 slamPos = CalculateGhostPosition(currentPiece);
             currentPiece.transform.position = slamPos;
             LockPiece();
         }
     }
 
-    void SpawnNewPiece() {
-        if (fallingPiecePrefabs == null || fallingPiecePrefabs.Length == 0) {
+    void SpawnNewPiece()
+    {
+        if (fallingPiecePrefabs == null || fallingPiecePrefabs.Length == 0)
+        {
             Debug.LogError("No falling piece prefabs specified!");
             return;
         }
