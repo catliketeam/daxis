@@ -2303,13 +2303,13 @@ struct U3CU3Ec__DisplayClass21_0_t9AE48FD34643B3E83D69BD45882795E81C13E0A1  : pu
 {
 	Action_1_t10DCB0C07D0D3C565CEACADC80D1152B35A45F6C* ___callback;
 };
-struct U3CHandleSingleTapU3Ed__30_t6E4F69474B52A184482CFCD6AE54C6C693EF27C2  : public RuntimeObject
+struct U3CHandleSingleTapU3Ed__31_t6498B25B8FE8835C0004D215E88A121F6229B1FA  : public RuntimeObject
 {
 	int32_t ___U3CU3E1__state;
 	RuntimeObject* ___U3CU3E2__current;
 	GameManager3DTetris_t37A551595A1A0F5860038532FF37023CAC9D660A* ___U3CU3E4__this;
 };
-struct U3CProcessLockedBlocksU3Ed__40_t73D141A8B39F2460BD8F12AF4A1CA01A5AB0AAD3  : public RuntimeObject
+struct U3CProcessLockedBlocksU3Ed__41_t02871B166618CA5A6FC87C31C0F2E9467C89ACE4  : public RuntimeObject
 {
 	int32_t ___U3CU3E1__state;
 	RuntimeObject* ___U3CU3E2__current;
@@ -29901,7 +29901,6 @@ struct CameraController_tDC4FF0FA10418272A26E5E7539156F4F4A98E8C5  : public Mono
 	float ___minVerticalMargin;
 	float ___discreteYawStep;
 	float ___yawLerpSpeed;
-	float ___twoFingerSwipeThreshold;
 	float ___flipZoomOutAmount;
 	float ___flipPhaseDuration;
 	float ___manualYaw;
@@ -29910,7 +29909,6 @@ struct CameraController_tDC4FF0FA10418272A26E5E7539156F4F4A98E8C5  : public Mono
 	float ___flipTimer;
 	float ___targetManualYaw;
 	float ___initialYawDuringFlip;
-	bool ___twoFingerSwipeRegistered;
 };
 struct CullingJob_t4206A6B00371EC11303617597A8DA5BFCCF92681 
 {
@@ -30101,6 +30099,7 @@ struct GameManager3DTetris_t37A551595A1A0F5860038532FF37023CAC9D660A  : public M
 	GameObject_t76FEDD663AB33C991A9C9A23129337651094216F* ___ghostPiece;
 	Vector2_t1FD6F485C871E832B347AB2DC8CBA08B739D8DF7 ___touchStartPos;
 	float ___swipeThreshold;
+	bool ___twoFingerSwipeRegistered;
 	Coroutine_t85EA685566A254C23F3FD77AB5BDFFFF8799596B* ___singleTapCoroutine;
 };
 struct InstanceCullingBatcher_tF7D6B377AB7FA3912737949C058C08068D1E1A16  : public RuntimeObject
@@ -36811,9 +36810,9 @@ const Il2CppTypeDefinitionSizes g_typeDefinitionSize7415 = { sizeof(CameraContro
 extern const Il2CppTypeDefinitionSizes g_typeDefinitionSize7416;
 const Il2CppTypeDefinitionSizes g_typeDefinitionSize7416 = { sizeof(FrameGridManager_t0973651DF6EA2A153389D57C99B45401B3834ACA), -1, 0, 0 };
 extern const Il2CppTypeDefinitionSizes g_typeDefinitionSize7417;
-const Il2CppTypeDefinitionSizes g_typeDefinitionSize7417 = { sizeof(U3CHandleSingleTapU3Ed__30_t6E4F69474B52A184482CFCD6AE54C6C693EF27C2), -1, 0, 0 };
+const Il2CppTypeDefinitionSizes g_typeDefinitionSize7417 = { sizeof(U3CHandleSingleTapU3Ed__31_t6498B25B8FE8835C0004D215E88A121F6229B1FA), -1, 0, 0 };
 extern const Il2CppTypeDefinitionSizes g_typeDefinitionSize7418;
-const Il2CppTypeDefinitionSizes g_typeDefinitionSize7418 = { sizeof(U3CProcessLockedBlocksU3Ed__40_t73D141A8B39F2460BD8F12AF4A1CA01A5AB0AAD3), -1, 0, 0 };
+const Il2CppTypeDefinitionSizes g_typeDefinitionSize7418 = { sizeof(U3CProcessLockedBlocksU3Ed__41_t02871B166618CA5A6FC87C31C0F2E9467C89ACE4), -1, 0, 0 };
 extern const Il2CppTypeDefinitionSizes g_typeDefinitionSize7419;
 const Il2CppTypeDefinitionSizes g_typeDefinitionSize7419 = { sizeof(GameManager3DTetris_t37A551595A1A0F5860038532FF37023CAC9D660A), -1, 0, 0 };
 extern const Il2CppTypeDefinitionSizes g_typeDefinitionSize7420;

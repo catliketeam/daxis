@@ -46,6 +46,9 @@ public class GameManager3DTetris : MonoBehaviour
     private Vector2 touchStartPos;
     public float swipeThreshold = 100f;
 
+    // PRIVATE FLAG to ensure two-finger gesture registers only once per gesture.
+    private bool twoFingerSwipeRegistered = false;
+
     // PUBLIC ACCESSORS
     public int GridHeight { get { return gridHeight; } }
     public Vector3 GridCenter { get { return new Vector3(0, (gridHeight * cubeSize) / 2f, 0); } }
@@ -62,6 +65,43 @@ public class GameManager3DTetris : MonoBehaviour
         return maxY;
     }
     public GameObject GhostPiece { get { return ghostPiece; } }
+
+    // LogGridState: Logs the occupancy of the grid to the Unity console.
+    void LogGridState() {
+        string log = "Grid Occupancy:\n";
+        for (int y = gridHeight - 1; y >= 0; y--) {
+            log += $"Layer {y}:\n";
+            for (int z = 0; z < gridDepth; z++) {
+                string row = "";
+                for (int x = 0; x < gridWidth; x++) {
+                    char symbol = '.';
+                    if (grid[x,y,z] != null)
+                        symbol = 'X';
+                    if (currentPiece != null) {
+                        foreach (Transform block in currentPiece.transform) {
+                            Vector3Int cell = WorldToGrid(block.position);
+                            if (cell.x == x && cell.y == y && cell.z == z) {
+                                symbol = 'A';
+                                break;
+                            }
+                        }
+                    }
+                    if (ghostPiece != null) {
+                        foreach (Transform block in ghostPiece.transform) {
+                            Vector3Int cell = WorldToGrid(block.position);
+                            if (cell.x == x && cell.y == y && cell.z == z && symbol != 'A') {
+                                symbol = 'G';
+                                break;
+                            }
+                        }
+                    }
+                    row += symbol;
+                }
+                log += row + "\n";
+            }
+        }
+        Debug.Log(log);
+    }
 
     void Start() {
         if (frameGrid == null) {
@@ -106,45 +146,32 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    void LogGridState() {
-        string log = "Grid Occupancy:\n";
-        for (int y = gridHeight - 1; y >= 0; y--) {
-            log += $"Layer {y}:\n";
-            for (int z = 0; z < gridDepth; z++) {
-                string row = "";
-                for (int x = 0; x < gridWidth; x++) {
-                    char symbol = '.';
-                    if (grid[x,y,z] != null)
-                        symbol = 'X';
-                    if (currentPiece != null) {
-                        foreach (Transform block in currentPiece.transform) {
-                            Vector3Int cell = WorldToGrid(block.position);
-                            if (cell.x == x && cell.y == y && cell.z == z) {
-                                symbol = 'A';
-                                break;
-                            }
-                        }
-                    }
-                    if (ghostPiece != null) {
-                        foreach (Transform block in ghostPiece.transform) {
-                            Vector3Int cell = WorldToGrid(block.position);
-                            if (cell.x == x && cell.y == y && cell.z == z && symbol != 'A') {
-                                symbol = 'G';
-                                break;
-                            }
-                        }
-                    }
-                    row += symbol;
-                }
-                log += row + "\n";
-            }
-        }
-        Debug.Log(log);
-    }
-
     void HandleInput() {
         if (Application.isMobilePlatform) {
-            if (Input.touchCount > 0) {
+            // Process two-finger gesture for camera flip.
+            if (Input.touchCount >= 2) {
+                if (!twoFingerSwipeRegistered) {
+                    Touch touch0 = Input.GetTouch(0);
+                    Touch touch1 = Input.GetTouch(1);
+                    if (touch0.phase == TouchPhase.Moved && touch1.phase == TouchPhase.Moved) {
+                        float avgDeltaX = (touch0.deltaPosition.x + touch1.deltaPosition.x) / 2f;
+                        if (Mathf.Abs(avgDeltaX) >= 50f) { // Threshold; adjust as needed.
+                            CameraController camController = Camera.main.GetComponent<CameraController>();
+                            if (camController != null) {
+                                float flipDelta = (avgDeltaX > 0) ? camController.discreteYawStep : -camController.discreteYawStep;
+                                camController.EnqueueCameraFlip(flipDelta);
+                            }
+                            twoFingerSwipeRegistered = true;
+                        }
+                    }
+                }
+                return; // Do not process one-finger gestures if two or more touches are active.
+            } else {
+                // Reset flag when fewer than two touches.
+                twoFingerSwipeRegistered = false;
+            }
+            // Process one-finger gesture.
+            if (Input.touchCount == 1) {
                 Touch touch = Input.GetTouch(0);
                 if (touch.phase == TouchPhase.Began) {
                     touchStartPos = touch.position;
@@ -154,10 +181,8 @@ public class GameManager3DTetris : MonoBehaviour
                     if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x) && Mathf.Abs(delta.y) >= swipeThreshold) {
                         if (delta.y < 0)
                             SlamPiece();
-                        // For vertical swipe upward, do nothing (rotation comes from a tap).
-                    }
-                    // If horizontal swipe, move the piece.
-                    else if (Mathf.Abs(delta.x) >= swipeThreshold && Mathf.Abs(delta.x) > Mathf.Abs(delta.y)) {
+                        // Vertical swipe upward does nothing (rotation comes from a tap).
+                    } else if (Mathf.Abs(delta.x) >= swipeThreshold && Mathf.Abs(delta.x) > Mathf.Abs(delta.y)) {
                         CameraController camController = Camera.main.GetComponent<CameraController>();
                         Vector3 effectiveRight = (camController != null) ? camController.EffectiveRight : Camera.main.transform.right;
                         effectiveRight.y = 0; effectiveRight.Normalize();
@@ -165,9 +190,7 @@ public class GameManager3DTetris : MonoBehaviour
                             MovePiece(effectiveRight * cubeSize);
                         else
                             MovePiece(-effectiveRight * cubeSize);
-                    }
-                    // Minimal movement: treat as a tap.
-                    else if (Mathf.Abs(delta.x) < 10f && Mathf.Abs(delta.y) < 10f) {
+                    } else if (Mathf.Abs(delta.x) < 10f && Mathf.Abs(delta.y) < 10f) {
                         if (singleTapCoroutine == null)
                             singleTapCoroutine = StartCoroutine(HandleSingleTap());
                     }
@@ -284,7 +307,8 @@ public class GameManager3DTetris : MonoBehaviour
             Vector3Int cell = WorldToGrid(block.position);
             if (cell.x >= 0 && cell.x < gridWidth &&
                 cell.y >= 0 && cell.y < gridHeight &&
-                cell.z >= 0 && cell.z < gridDepth) {
+                cell.z >= 0 && cell.z < gridDepth)
+            {
                 grid[cell.x, cell.y, cell.z] = block;
             }
         }
@@ -325,7 +349,8 @@ public class GameManager3DTetris : MonoBehaviour
                 Vector3Int cell = WorldToGrid(block.position);
                 if (cell.x >= 0 && cell.x < gridWidth &&
                     cell.y >= 0 && cell.y < gridHeight &&
-                    cell.z >= 0 && cell.z < gridDepth) {
+                    cell.z >= 0 && cell.z < gridDepth)
+                {
                     grid[cell.x, cell.y, cell.z] = block;
                 }
             }
@@ -336,7 +361,8 @@ public class GameManager3DTetris : MonoBehaviour
                 Vector3Int cell = WorldToGrid(blockObj.transform.position);
                 if (cell.x >= 0 && cell.x < gridWidth &&
                     cell.y >= 0 && cell.y < gridHeight &&
-                    cell.z >= 0 && cell.z < gridDepth) {
+                    cell.z >= 0 && cell.z < gridDepth)
+                {
                     grid[cell.x, cell.y, cell.z] = blockObj.transform;
                 }
             }
@@ -414,8 +440,8 @@ public class GameManager3DTetris : MonoBehaviour
         for (int x = 0; x < gridWidth; x++) {
             for (int y = 0; y < gridHeight; y++) {
                 for (int z = 0; z < gridDepth; z++) {
-                    if (grid[x,y,z] != null) {
-                        Transform block = grid[x,y,z];
+                    if (grid[x, y, z] != null) {
+                        Transform block = grid[x, y, z];
                         if (block.parent == null) {
                             if (IsValidVirtualPositionForBlock(block, block.position + Vector3.down * cubeSize))
                                 detachedThatCanMove.Add(block);

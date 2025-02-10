@@ -4,9 +4,9 @@ using System.Collections.Generic;
 public class CameraController : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("Reference to the GameManager3DTetris for grid occupancy info. Ensure GameManager3DTetris exposes GhostPiece.")]
+    [Tooltip("Reference to the GameManager3DTetris for grid occupancy info.")]
     public GameManager3DTetris gameManager;
-    [Tooltip("The target the camera should look at (typically the center of the play area). Defaults to Vector3.zero if unassigned.")]
+    [Tooltip("The target the camera should look at (typically the center of the play area).")]
     public Transform target;
     [Tooltip("Optional: The transform of the frame. The camera’s base yaw is derived from this.")]
     public Transform frameTransform;
@@ -33,8 +33,6 @@ public class CameraController : MonoBehaviour
     public float discreteYawStep = 90f;
     [Tooltip("Speed at which the manual yaw offset transitions (for smooth discrete flipping).")]
     public float yawLerpSpeed = 5f;
-    [Tooltip("Swipe threshold in pixels for mobile two‑finger swipe detection.")]
-    public float twoFingerSwipeThreshold = 50f;
 
     [Header("Flip Zoom Effect")]
     [Tooltip("Extra distance added at the peak of a yaw flip (zoom out amount).")]
@@ -53,12 +51,9 @@ public class CameraController : MonoBehaviour
     private float targetManualYaw = 0f;
     private float initialYawDuringFlip = 0f;
 
-    // New flag: ensure we only register one two-finger swipe per gesture.
-    private bool twoFingerSwipeRegistered = false;
-
     /// <summary>
     /// Returns the effective right vector based on the current final yaw (frame yaw plus manualYaw).
-    /// This is used to constrain piece movement to the current horizontal axis.
+    /// This is used by GameManager3DTetris for moving pieces horizontally.
     /// </summary>
     public Vector3 EffectiveRight {
         get {
@@ -70,7 +65,7 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
-        // Automatically derive frameTransform if not assigned.
+        // Automatically assign frameTransform if not set.
         if (frameTransform == null && gameManager != null && gameManager.frameGrid != null)
             frameTransform = gameManager.frameGrid.transform;
     }
@@ -83,9 +78,8 @@ public class CameraController : MonoBehaviour
             return;
         }
 
+        // --- Handle Desktop Input for Camera Flip (SHIFT+Arrow) ---
         float inputDelta = 0f;
-
-        // --- Desktop Input for Camera Flips (SHIFT + arrow keys) ---
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             if (Input.GetKeyDown(KeyCode.LeftArrow))
@@ -93,39 +87,11 @@ public class CameraController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.RightArrow))
                 inputDelta = -discreteYawStep;
         }
-
-        // --- Mobile Input: Two-Finger Swipe for Camera Flips ---
-        // Only process if we have at least two touches and no flip is in progress
-        if (Application.isMobilePlatform && Input.touchCount >= 2 && currentFlipState == FlipState.None)
-        {
-            // If we haven't yet registered this two-finger swipe for a flip:
-            if (!twoFingerSwipeRegistered)
-            {
-                Touch touch0 = Input.GetTouch(0);
-                Touch touch1 = Input.GetTouch(1);
-                // Process if both touches are moving.
-                if (touch0.phase == TouchPhase.Moved && touch1.phase == TouchPhase.Moved)
-                {
-                    float avgDeltaX = (touch0.deltaPosition.x + touch1.deltaPosition.x) / 2f;
-                    if (Mathf.Abs(avgDeltaX) >= twoFingerSwipeThreshold)
-                    {
-                        inputDelta = (avgDeltaX > 0) ? discreteYawStep : -discreteYawStep;
-                        twoFingerSwipeRegistered = true; // Register this swipe so we don't re-trigger until released.
-                    }
-                }
-            }
-        }
-        else
-        {
-            // If fewer than two touches are present, reset the flag.
-            twoFingerSwipeRegistered = false;
-        }
+        // (Note: Mobile double tap detection is removed so that on mobile the camera flip will be triggered by a double-finger swipe handled in GameManager3DTetris.)
 
         if (Mathf.Abs(inputDelta) > 0.001f)
         {
-            pendingFlipQueue.Enqueue(inputDelta);
-            if (currentFlipState == FlipState.None)
-                StartNextFlip();
+            EnqueueCameraFlip(inputDelta);
         }
 
         // --- Process the Flip State Machine ---
@@ -166,19 +132,17 @@ public class CameraController : MonoBehaviour
                     break;
             }
         }
-        else
-        {
+        else {
             extraDistance = 0f;
         }
 
-        // --- Determine the Effective Target Position ---
+        // --- Compute the Desired Camera Position ---
         Vector3 effectiveTargetPosition = Vector3.zero;
         if (gameManager.GhostPiece != null)
             effectiveTargetPosition = gameManager.GhostPiece.transform.position;
         else if (target != null)
             effectiveTargetPosition = target.position;
 
-        // --- Occupancy-Based Adjustments & Viewport Alignment ---
         int maxOccupiedY = gameManager.GetMaxOccupiedY();
         int gridH = gameManager.GridHeight;
         float tOccupancy = (gridH > 1) ? Mathf.Clamp01(((float)maxOccupiedY) / (gridH * 2f - 1)) : 0f;
@@ -190,20 +154,16 @@ public class CameraController : MonoBehaviour
         float finalYawForPos = baseYaw + manualYaw;
         Quaternion desiredRotationForPos = Quaternion.Euler(desiredPitch, finalYawForPos, 0);
         Vector3 offsetVec = desiredRotationForPos * new Vector3(0, 0, -desiredDistance);
-        Vector3 preliminaryPos = new Vector3(effectiveTargetPosition.x + offsetVec.x,
-                                             effectiveTargetPosition.y + desiredY,
-                                             effectiveTargetPosition.z + offsetVec.z);
+        Vector3 preliminaryPos = effectiveTargetPosition + new Vector3(offsetVec.x, desiredY, offsetVec.z);
 
         Vector3 viewportBottomCenter = ComputeViewportBottomCenter(preliminaryPos, desiredRotationForPos);
         float yAdjustment = viewportBottomCenter.y - desiredBottomEdge;
         Vector3 finalCameraPosition = preliminaryPos;
         finalCameraPosition.y -= yAdjustment;
 
-        // Freeze the Y position if no ghost piece is available.
         if (gameManager.GhostPiece == null)
             finalCameraPosition.y = transform.position.y;
-        else
-        {
+        else {
             float ghostY = gameManager.GhostPiece.transform.position.y;
             finalCameraPosition.y = Mathf.Max(finalCameraPosition.y, ghostY + minVerticalMargin);
         }
@@ -217,6 +177,16 @@ public class CameraController : MonoBehaviour
 
         transform.position = Vector3.Lerp(transform.position, finalCameraPosition, Time.deltaTime * lerpSpeed);
         transform.rotation = Quaternion.Lerp(transform.rotation, finalRotation, Time.deltaTime * lerpSpeed);
+    }
+
+    /// <summary>
+    /// Public method to enqueue a camera flip.
+    /// </summary>
+    public void EnqueueCameraFlip(float delta)
+    {
+        pendingFlipQueue.Enqueue(delta);
+        if (currentFlipState == FlipState.None)
+            StartNextFlip();
     }
 
     void StartNextFlip()
