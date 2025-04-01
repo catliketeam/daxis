@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;      // For UI raycast checking
+using UnityEngine.InputSystem;       // For the new Input System (Touchscreen)
 
 public class GameManager3DTetris : MonoBehaviour
 {
@@ -46,12 +48,8 @@ public class GameManager3DTetris : MonoBehaviour
     private Vector2 touchStartPos;
     public float swipeThreshold = 100f;
 
-    // For press-and-hold slam gesture.
-    private float touchStartTime = 0f;
-    private bool isSlamTriggered = false;
-
-    // PRIVATE FLAG to ensure two-finger gesture registers only once per gesture.
-    private bool twoFingerSwipeRegistered = false;
+    // Flag to ensure a single touch input is processed only once.
+    private bool touchInputProcessed = false;
 
     // PUBLIC ACCESSORS
     public int GridHeight { get { return gridHeight; } }
@@ -142,8 +140,10 @@ public class GameManager3DTetris : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.G))
             LogGridState();
+
         if (processingLockedBlocks)
             return;
+
         if (currentPiece != null)
         {
             HandleInput();
@@ -173,78 +173,56 @@ public class GameManager3DTetris : MonoBehaviour
         }
     }
 
-    // --- Modified Mobile Input Handling ---
+    // --- New Helper Function to Check if the Pointer is Over a UI Element ---
+    private bool IsPointerOverUIObject()
+    {
+        if (Touchscreen.current != null)
+        {
+            Vector2 touchPosition = Touchscreen.current.position.ReadValue();
+            var eventData = new PointerEventData(EventSystem.current) { position = touchPosition };
+            var results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(eventData, results);
+            return results.Count > 0;
+        }
+        return false;
+    }
+
+    // --- Modified Mobile & Desktop Input Handling ---
     void HandleInput()
     {
+        // Check if the pointer is over a UI element; if so, do not process game input.
+        if (IsPointerOverUIObject())
+            return;
+
         if (Application.isMobilePlatform)
         {
-            // Process two-finger gesture for camera flip.
-            if (Input.touchCount >= 2)
-            {
-                if (!twoFingerSwipeRegistered)
-                {
-                    Touch touch0 = Input.GetTouch(0);
-                    Touch touch1 = Input.GetTouch(1);
-                    if (touch0.phase == TouchPhase.Moved && touch1.phase == TouchPhase.Moved)
-                    {
-                        float avgDeltaX = (touch0.deltaPosition.x + touch1.deltaPosition.x) / 2f;
-                        if (Mathf.Abs(avgDeltaX) >= 50f) // Threshold; adjust as needed.
-                        {
-                            CameraController camController = Camera.main.GetComponent<CameraController>();
-                            if (camController != null)
-                            {
-                                float flipDelta = (avgDeltaX > 0) ? camController.discreteYawStep : -camController.discreteYawStep;
-                                camController.EnqueueCameraFlip(flipDelta);
-                            }
-                            twoFingerSwipeRegistered = true;
-                        }
-                    }
-                }
-                return; // Do not process one-finger gestures if two or more touches are active.
-            }
-            else
-            {
-                // Reset flag when fewer than two touches.
-                twoFingerSwipeRegistered = false;
-            }
+            // (No two-finger gestures for camera flip here; those are now handled exclusively via HUD buttons.)
 
-            // Process one-finger gesture.
+            // Process one-finger touch.
             if (Input.touchCount == 1)
             {
-                Touch touch = Input.GetTouch(0);
-                if (touch.phase == TouchPhase.Began)
+                var touch = Touchscreen.current.primaryTouch;
+                // Use ReadValue() on the phase and position to get the actual values.
+                if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Began)
                 {
-                    touchStartPos = touch.position;
-                    touchStartTime = Time.time;
-                    isSlamTriggered = false;
+                    touchStartPos = touch.position.ReadValue();
+                    touchInputProcessed = false;
                 }
-                // Check for press-and-hold slam gesture.
-                else if ((touch.phase == TouchPhase.Stationary || (touch.phase == TouchPhase.Moved && (touch.position - touchStartPos).magnitude < 10f)) && !isSlamTriggered)
+                else if (touch.phase.ReadValue() == UnityEngine.InputSystem.TouchPhase.Ended && !touchInputProcessed)
                 {
-                    if (Time.time - touchStartTime >= 1.0f) // 1-second hold threshold.
-                    {
-                        SlamPiece();
-                        isSlamTriggered = true;
-                    }
-                }
-                else if (touch.phase == TouchPhase.Ended)
-                {
-                    // If slam already triggered via hold, do nothing.
-                    if (isSlamTriggered)
-                        return;
-
-                    Vector2 delta = touch.position - touchStartPos;
-                    // Instead of slamming, vertical swipes now move the piece along the depth axis.
+                    Vector2 endPos = touch.position.ReadValue();
+                    Vector2 delta = endPos - touchStartPos;
+                    // Vertical swipes: move the piece along the depth axis.
                     if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x) && Mathf.Abs(delta.y) >= swipeThreshold)
                     {
-                        // Compute effective depth: project the camera's forward vector onto the XZ plane.
+                        // Project the camera's forward vector onto the horizontal (XZ) plane.
                         Vector3 effectiveDepth = Vector3.ProjectOnPlane(Camera.main.transform.forward, Vector3.up).normalized;
                         if (delta.y > 0)
                             MovePiece(effectiveDepth * cubeSize);
                         else
                             MovePiece(-effectiveDepth * cubeSize);
                     }
-                    // Horizontal swipe: move the piece.
+                    // Horizontal swipes: move the piece left/right.
                     else if (Mathf.Abs(delta.x) >= swipeThreshold && Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
                     {
                         CameraController camController = Camera.main.GetComponent<CameraController>();
@@ -262,6 +240,8 @@ public class GameManager3DTetris : MonoBehaviour
                         if (singleTapCoroutine == null)
                             singleTapCoroutine = StartCoroutine(HandleSingleTap());
                     }
+                    // Mark this touch as processed so it doesn't fire repeatedly.
+                    touchInputProcessed = true;
                 }
             }
         }
@@ -341,15 +321,15 @@ public class GameManager3DTetris : MonoBehaviour
         Vector3 pos = currentPiece.transform.position;
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
-        float newX = Mathf.Round((pos.x + halfPlayableWidth - cubeSize/2f)/cubeSize)*cubeSize - halfPlayableWidth + cubeSize/2f;
-        float newZ = Mathf.Round((pos.z + halfPlayableDepth - cubeSize/2f)/cubeSize)*cubeSize - halfPlayableDepth + cubeSize/2f;
+        float newX = Mathf.Round((pos.x + halfPlayableWidth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableWidth + cubeSize / 2f;
+        float newZ = Mathf.Round((pos.z + halfPlayableDepth - cubeSize / 2f) / cubeSize) * cubeSize - halfPlayableDepth + cubeSize / 2f;
         currentPiece.transform.position = new Vector3(newX, pos.y, newZ);
     }
 
     void SnapPieceVertically()
     {
         Vector3 pos = currentPiece.transform.position;
-        float newY = Mathf.Floor(pos.y/cubeSize)*cubeSize;
+        float newY = Mathf.Floor(pos.y / cubeSize) * cubeSize;
         currentPiece.transform.position = new Vector3(pos.x, newY, pos.z);
     }
 
@@ -372,9 +352,9 @@ public class GameManager3DTetris : MonoBehaviour
     {
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
-        int x = Mathf.FloorToInt((pos.x + halfPlayableWidth)/cubeSize);
-        int y = Mathf.FloorToInt(pos.y/cubeSize);
-        int z = Mathf.FloorToInt((pos.z + halfPlayableDepth)/cubeSize);
+        int x = Mathf.FloorToInt((pos.x + halfPlayableWidth) / cubeSize);
+        int y = Mathf.FloorToInt(pos.y / cubeSize);
+        int z = Mathf.FloorToInt((pos.z + halfPlayableDepth) / cubeSize);
         return new Vector3Int(x, y, z);
     }
 
@@ -382,9 +362,9 @@ public class GameManager3DTetris : MonoBehaviour
     {
         float halfPlayableWidth = playableWidth / 2f;
         float halfPlayableDepth = playableDepth / 2f;
-        float x = cell.x * cubeSize - halfPlayableWidth + cubeSize/2f;
+        float x = cell.x * cubeSize - halfPlayableWidth + cubeSize / 2f;
         float y = cell.y * cubeSize;
-        float z = cell.z * cubeSize - halfPlayableDepth + cubeSize/2f;
+        float z = cell.z * cubeSize - halfPlayableDepth + cubeSize / 2f;
         return new Vector3(x, y, z);
     }
 
@@ -704,5 +684,34 @@ public class GameManager3DTetris : MonoBehaviour
         currentPiece = Instantiate(selectedPrefab, spawnPosition, Quaternion.identity);
         SnapPieceHorizontally();
         SnapPieceVertically();
+    }
+
+    // --- Public Methods for HUD Buttons ---
+    // These methods are to be assigned to your UI buttons’ OnClick events.
+
+    // Called by the bottom left HUD button.
+    public void SwitchCameraLeft()
+    {
+        CameraController camController = Camera.main.GetComponent<CameraController>();
+        if (camController != null)
+        {
+            camController.EnqueueCameraFlip(camController.discreteYawStep);
+        }
+    }
+
+    // Called by the bottom right HUD button.
+    public void SwitchCameraRight()
+    {
+        CameraController camController = Camera.main.GetComponent<CameraController>();
+        if (camController != null)
+        {
+            camController.EnqueueCameraFlip(-camController.discreteYawStep);
+        }
+    }
+
+    // Called by the bottom middle HUD button.
+    public void SlamActivePiece()
+    {
+        SlamPiece();
     }
 }

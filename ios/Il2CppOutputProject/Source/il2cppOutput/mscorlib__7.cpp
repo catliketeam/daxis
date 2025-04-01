@@ -985,6 +985,9 @@ struct Tuple_3_tB02F14A3D76EE42652F156C7723CA6A3278E6ACA  : public RuntimeObject
 	Task_t751C4CC3ECD055BABA8A0B6A5DFBB4283DCA8572* ___m_Item2;
 	TaskContinuation_t81C0DCE6A6E0DC562282F338AF829177F17D1C7D* ___m_Item3;
 };
+struct BitConverter_t6E99605185963BC12B3D369E13F2B88997E64A27  : public RuntimeObject
+{
+};
 struct CancellationCallbackInfo_tC8BE558ED1E173434DD1919D574C9FAFE501E22D  : public RuntimeObject
 {
 	Action_1_t6F9EB113EB3F16226AEF811A2744F4111C116C87* ___Callback;
@@ -1644,6 +1647,116 @@ struct VolatileObject_tEA3ACFAAFB9D2EFA5162F693BAAB342EA7737B99_marshaled_pinvok
 struct VolatileObject_tEA3ACFAAFB9D2EFA5162F693BAAB342EA7737B99_marshaled_com
 {
 	RuntimeObject* ___Value;
+};
+struct Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A 
+{
+	union
+	{
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			uint32_t ___U0;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			uint32_t ___U0_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___U1_OffsetPadding[4];
+			uint32_t ___U1;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___U1_OffsetPadding_forAlignmentOnly[4];
+			uint32_t ___U1_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___U2_OffsetPadding[8];
+			uint32_t ___U2;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___U2_OffsetPadding_forAlignmentOnly[8];
+			uint32_t ___U2_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___U3_OffsetPadding[12];
+			uint32_t ___U3;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___U3_OffsetPadding_forAlignmentOnly[12];
+			uint32_t ___U3_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___U4_OffsetPadding[16];
+			uint32_t ___U4;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___U4_OffsetPadding_forAlignmentOnly[16];
+			uint32_t ___U4_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___U5_OffsetPadding[20];
+			uint32_t ___U5;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___U5_OffsetPadding_forAlignmentOnly[20];
+			uint32_t ___U5_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			uint64_t ___ulo64LE;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			uint64_t ___ulo64LE_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___umid64LE_OffsetPadding[8];
+			uint64_t ___umid64LE;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___umid64LE_OffsetPadding_forAlignmentOnly[8];
+			uint64_t ___umid64LE_forAlignmentOnly;
+		};
+		#pragma pack(push, tp, 1)
+		struct
+		{
+			char ___uhigh64LE_OffsetPadding[16];
+			uint64_t ___uhigh64LE;
+		};
+		#pragma pack(pop, tp)
+		struct
+		{
+			char ___uhigh64LE_OffsetPadding_forAlignmentOnly[16];
+			uint64_t ___uhigh64LE_forAlignmentOnly;
+		};
+	};
 };
 struct PowerOvfl_t00CAEB1B84D897513AD903AC683159A172CA9304 
 {
@@ -2373,6 +2486,10 @@ struct LowLevelList_1_t1733DA9FDEFD3307043CE1B37BD49D65D554A604_StaticFields
 {
 	TaskU5BU5D_t368E447BD9A179BA9A26BAAABF1BAE9CA79F60B3* ___s_emptyArray;
 };
+struct BitConverter_t6E99605185963BC12B3D369E13F2B88997E64A27_StaticFields
+{
+	bool ___IsLittleEndian;
+};
 struct CancellationCallbackInfo_tC8BE558ED1E173434DD1919D574C9FAFE501E22D_StaticFields
 {
 	ContextCallback_tE8AFBDBFCC040FDA8DA8C1EEFE9BD66B16BDA007* ___s_executionContextCallback;
@@ -3068,6 +3185,10 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void LowLevelList_1_AddRange_m9D986B88377A556
 IL2CPP_EXTERN_C IL2CPP_NO_INLINE IL2CPP_METHOD_ATTR void List_1_AddWithResize_m79A9BF770BEF9C06BE40D5401E55E375F2726CC4_gshared (List_1_tA239CB83DE5615F348BB0507E45F490F4F7C9A8D* __this, RuntimeObject* ___0_item, const RuntimeMethod* method) ;
 
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void PowerOvfl__ctor_m8EC0ACF2CD51241ECBA9CFC8AF920E19B6303995 (PowerOvfl_t00CAEB1B84D897513AD903AC683159A172CA9304* __this, uint32_t ___0_hi, uint32_t ___1_mid, uint32_t ___2_lo, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR uint64_t Buf24_get_Low64_mA8A2B2C7B08944E270EE0B7A3F887ED667FB8AEE (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_Low64_mB874F88C8A9BAADD7D6BD094F089C1A73140460D (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_Mid64_m88AADD3E7C05FD2D37E8BB9AD3BF6DC0F5C73D4B (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_High64_mB182C6D81D934F47E819AFCA5F3F321FCCF9164B (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemException__ctor_mC481DFD60F19362A0B3523FBD5E429EC4F1F3FB5 (SystemException_tCC48D868298F4C0705279823E34B00F4FBDB7295* __this, String_t* ___0_message, const RuntimeMethod* method) ;
 IL2CPP_MANAGED_FORCE_INLINE IL2CPP_METHOD_ATTR void Exception_set_HResult_m010A171183E240EBF4F7611E924B533FAB2E471F_inline (Exception_t* __this, int32_t ___0_value, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void AbandonedMutexException_SetupException_mC9E7CAD8109E7317E45263982BDA7E124A5F0896 (AbandonedMutexException_t3C29914D2DC594E0F28AB37EA1BAAF2E770375DF* __this, int32_t ___0_location, WaitHandle_t08F8DB54593B241FE32E0DD0BD3D82785D3AE3D8* ___1_handle, const RuntimeMethod* method) ;
@@ -4055,6 +4176,133 @@ IL2CPP_EXTERN_C  void PowerOvfl__ctor_m8EC0ACF2CD51241ECBA9CFC8AF920E19B6303995_
 	int32_t _offset = 1;
 	_thisAdjusted = reinterpret_cast<PowerOvfl_t00CAEB1B84D897513AD903AC683159A172CA9304*>(__this + _offset);
 	PowerOvfl__ctor_m8EC0ACF2CD51241ECBA9CFC8AF920E19B6303995(_thisAdjusted, ___0_hi, ___1_mid, ___2_lo, method);
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winvalid-offsetof"
+#pragma clang diagnostic ignored "-Wunused-variable"
+#endif
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR uint64_t Buf24_get_Low64_mA8A2B2C7B08944E270EE0B7A3F887ED667FB8AEE (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, const RuntimeMethod* method) 
+{
+	{
+		if (il2cpp_codegen_is_little_endian())
+		{
+			goto IL_001a;
+		}
+	}
+	{
+		uint32_t L_0 = __this->___U1;
+		uint32_t L_1 = __this->___U0;
+		return ((int64_t)(((int64_t)(((int64_t)(uint64_t)L_0)<<((int32_t)32)))|((int64_t)(uint64_t)L_1)));
+	}
+
+IL_001a:
+	{
+		uint64_t L_2 = __this->___ulo64LE;
+		return L_2;
+	}
+}
+IL2CPP_EXTERN_C  uint64_t Buf24_get_Low64_mA8A2B2C7B08944E270EE0B7A3F887ED667FB8AEE_AdjustorThunk (RuntimeObject* __this, const RuntimeMethod* method)
+{
+	Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* _thisAdjusted;
+	int32_t _offset = 1;
+	_thisAdjusted = reinterpret_cast<Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A*>(__this + _offset);
+	uint64_t _returnValue;
+	_returnValue = Buf24_get_Low64_mA8A2B2C7B08944E270EE0B7A3F887ED667FB8AEE(_thisAdjusted, method);
+	return _returnValue;
+}
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_Low64_mB874F88C8A9BAADD7D6BD094F089C1A73140460D (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) 
+{
+	{
+		if (!il2cpp_codegen_is_little_endian())
+		{
+			goto IL_000f;
+		}
+	}
+	{
+		uint64_t L_0 = ___0_value;
+		__this->___ulo64LE = L_0;
+		return;
+	}
+
+IL_000f:
+	{
+		uint64_t L_1 = ___0_value;
+		__this->___U1 = ((int32_t)(uint32_t)((int64_t)((uint64_t)L_1>>((int32_t)32))));
+		uint64_t L_2 = ___0_value;
+		__this->___U0 = ((int32_t)(uint32_t)L_2);
+		return;
+	}
+}
+IL2CPP_EXTERN_C  void Buf24_set_Low64_mB874F88C8A9BAADD7D6BD094F089C1A73140460D_AdjustorThunk (RuntimeObject* __this, uint64_t ___0_value, const RuntimeMethod* method)
+{
+	Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* _thisAdjusted;
+	int32_t _offset = 1;
+	_thisAdjusted = reinterpret_cast<Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A*>(__this + _offset);
+	Buf24_set_Low64_mB874F88C8A9BAADD7D6BD094F089C1A73140460D(_thisAdjusted, ___0_value, method);
+}
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_Mid64_m88AADD3E7C05FD2D37E8BB9AD3BF6DC0F5C73D4B (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) 
+{
+	{
+		if (!il2cpp_codegen_is_little_endian())
+		{
+			goto IL_000f;
+		}
+	}
+	{
+		uint64_t L_0 = ___0_value;
+		__this->___umid64LE = L_0;
+		return;
+	}
+
+IL_000f:
+	{
+		uint64_t L_1 = ___0_value;
+		__this->___U3 = ((int32_t)(uint32_t)((int64_t)((uint64_t)L_1>>((int32_t)32))));
+		uint64_t L_2 = ___0_value;
+		__this->___U2 = ((int32_t)(uint32_t)L_2);
+		return;
+	}
+}
+IL2CPP_EXTERN_C  void Buf24_set_Mid64_m88AADD3E7C05FD2D37E8BB9AD3BF6DC0F5C73D4B_AdjustorThunk (RuntimeObject* __this, uint64_t ___0_value, const RuntimeMethod* method)
+{
+	Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* _thisAdjusted;
+	int32_t _offset = 1;
+	_thisAdjusted = reinterpret_cast<Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A*>(__this + _offset);
+	Buf24_set_Mid64_m88AADD3E7C05FD2D37E8BB9AD3BF6DC0F5C73D4B(_thisAdjusted, ___0_value, method);
+}
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void Buf24_set_High64_mB182C6D81D934F47E819AFCA5F3F321FCCF9164B (Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* __this, uint64_t ___0_value, const RuntimeMethod* method) 
+{
+	{
+		if (!il2cpp_codegen_is_little_endian())
+		{
+			goto IL_000f;
+		}
+	}
+	{
+		uint64_t L_0 = ___0_value;
+		__this->___uhigh64LE = L_0;
+		return;
+	}
+
+IL_000f:
+	{
+		uint64_t L_1 = ___0_value;
+		__this->___U5 = ((int32_t)(uint32_t)((int64_t)((uint64_t)L_1>>((int32_t)32))));
+		uint64_t L_2 = ___0_value;
+		__this->___U4 = ((int32_t)(uint32_t)L_2);
+		return;
+	}
+}
+IL2CPP_EXTERN_C  void Buf24_set_High64_mB182C6D81D934F47E819AFCA5F3F321FCCF9164B_AdjustorThunk (RuntimeObject* __this, uint64_t ___0_value, const RuntimeMethod* method)
+{
+	Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A* _thisAdjusted;
+	int32_t _offset = 1;
+	_thisAdjusted = reinterpret_cast<Buf24_tEB957CE598A2445899F91CBB9B1FC0403650E27A*>(__this + _offset);
+	Buf24_set_High64_mB182C6D81D934F47E819AFCA5F3F321FCCF9164B(_thisAdjusted, ___0_value, method);
 }
 #ifdef __clang__
 #pragma clang diagnostic pop

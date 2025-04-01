@@ -4640,6 +4640,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ComputeShader_SetShaderKeywords_Injected
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ComputeShader_SetShaderKeywords_m5620E3441AC6639E2C17ADDB5A175248F4594C31 (ComputeShader_tA7BDD0F6EE879D149480F5890BA2E665C50CFBF8* __this, StringU5BU5D_t7674CD946EC0CE7B3AE0BE70E6EE85F2ECD9F248* ___0_names, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ComputeShader_SetIntArray_m71448ED688440FA478F165393409E352608E285B (ComputeShader_tA7BDD0F6EE879D149480F5890BA2E665C50CFBF8* __this, int32_t ___0_nameID, Int32U5BU5D_t19C97395396A72ECAF310612F0760F165060314C* ___1_values, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void ComputeShader_SetConstantComputeBuffer_m167A0FEE6FC030E774EA70552BC6FEDB7D390232 (ComputeShader_tA7BDD0F6EE879D149480F5890BA2E665C50CFBF8* __this, int32_t ___0_nameID, ComputeBuffer_t51EADA9015EBCC1B982C5584E9AB2734415A8233* ___1_buffer, int32_t ___2_offset, int32_t ___3_size, const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* SystemInfo_GetOperatingSystem_m03DA0E31D9925BE604EC7841D7C3540D953F9720 (const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t SystemInfo_GetOperatingSystemFamily_mE40096D3196E10CC8940F79B729CA985D1CD4396 (const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* SystemInfo_GetProcessorType_m54485B77930922924FB7D19224231432C1914902 (const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t SystemInfo_GetDeviceType_m91002A9A6377F0A676DA179F0C94522B2D41776B (const RuntimeMethod* method) ;
@@ -4676,6 +4677,7 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool SystemInfo_SupportsStoreAndResolveAction
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool SystemInfo_SupportsMultisampleResolveDepth_mE03A8C178895067701D8644FC1F5BAE59188DEFA (const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool SystemInfo_SupportsMultisampleResolveStencil_m4E638E23A5B039D6BED90302D0F98C55680C9FD0 (const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool SystemInfo_SupportsIndirectArgumentsBuffer_mFC57E2FDE9EFBF97D8AECEB184D4F39A7931D1B9 (const RuntimeMethod* method) ;
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1 (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetProcessorType_Injected_m2E7A8BA9F31884C3D47120B5F0051DDAA2B3AA34 (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetGraphicsDeviceName_Injected_m464892B1B0966F8C04622B95CD28B7AAA401E1EE (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) ;
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetGraphicsDeviceVendor_Injected_m2E621502B7BD7C84D977FDBA238B863A4B4B10F3 (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) ;
@@ -30302,6 +30304,22 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void PreloadData_PreloadDataDontStripMe_mB4D9
 #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* SystemInfo_get_operatingSystem_m47B20646C221517ACA8F99DE8576BF794AEB6F8D (const RuntimeMethod* method) 
+{
+	String_t* V_0 = NULL;
+	{
+		String_t* L_0;
+		L_0 = SystemInfo_GetOperatingSystem_m03DA0E31D9925BE604EC7841D7C3540D953F9720(NULL);
+		V_0 = L_0;
+		goto IL_0009;
+	}
+
+IL_0009:
+	{
+		String_t* L_1 = V_0;
+		return L_1;
+	}
+}
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t SystemInfo_get_operatingSystemFamily_mC8B13A7D2F34699EDDA4F7629F117C76F0C865FA (const RuntimeMethod* method) 
 {
 	int32_t V_0 = 0;
@@ -30939,6 +30957,41 @@ IL_0009:
 		return L_1;
 	}
 }
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR String_t* SystemInfo_GetOperatingSystem_m03DA0E31D9925BE604EC7841D7C3540D953F9720 (const RuntimeMethod* method) 
+{
+	ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E V_0;
+	memset((&V_0), 0, sizeof(V_0));
+	String_t* V_1 = NULL;
+	{
+		auto __finallyBlock = il2cpp::utils::Finally([&]
+		{
+
+FINALLY_0009:
+			{
+				ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E L_0 = V_0;
+				String_t* L_1;
+				L_1 = OutStringMarshaller_GetStringAndDispose_mB15D41A9893BBC55074D4910259FA722129DB062(L_0, NULL);
+				V_1 = L_1;
+				return;
+			}
+		});
+		try
+		{
+			SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1((&V_0), NULL);
+			goto IL_0011;
+		}
+		catch(Il2CppExceptionWrapper& e)
+		{
+			__finallyBlock.StoreException(e.ex);
+		}
+	}
+
+IL_0011:
+	{
+		String_t* L_2 = V_1;
+		return L_2;
+	}
+}
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR int32_t SystemInfo_GetOperatingSystemFamily_mE40096D3196E10CC8940F79B729CA985D1CD4396 (const RuntimeMethod* method) 
 {
 	typedef int32_t (*SystemInfo_GetOperatingSystemFamily_mE40096D3196E10CC8940F79B729CA985D1CD4396_ftn) ();
@@ -31357,6 +31410,14 @@ IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR bool SystemInfo_SupportsIndirectArgumentsBuff
 	_il2cpp_icall_func = (SystemInfo_SupportsIndirectArgumentsBuffer_mFC57E2FDE9EFBF97D8AECEB184D4F39A7931D1B9_ftn)il2cpp_codegen_resolve_icall ("UnityEngine.SystemInfo::SupportsIndirectArgumentsBuffer()");
 	bool icallRetVal = _il2cpp_icall_func();
 	return icallRetVal;
+}
+IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1 (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) 
+{
+	typedef void (*SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1_ftn) (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E*);
+	static SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1_ftn _il2cpp_icall_func;
+	if (!_il2cpp_icall_func)
+	_il2cpp_icall_func = (SystemInfo_GetOperatingSystem_Injected_m5D5A4D16DADEA01552B8D4BE8590BC517DE268F1_ftn)il2cpp_codegen_resolve_icall ("UnityEngine.SystemInfo::GetOperatingSystem_Injected(UnityEngine.Bindings.ManagedSpanWrapper&)");
+	_il2cpp_icall_func(___0_ret);
 }
 IL2CPP_EXTERN_C IL2CPP_METHOD_ATTR void SystemInfo_GetProcessorType_Injected_m2E7A8BA9F31884C3D47120B5F0051DDAA2B3AA34 (ManagedSpanWrapper_tE7FC4BBB631B130757F8DEB15853D98FD3D5DC0E* ___0_ret, const RuntimeMethod* method) 
 {

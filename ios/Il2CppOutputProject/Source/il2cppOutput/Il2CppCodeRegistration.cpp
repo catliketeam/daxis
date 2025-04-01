@@ -65,10 +65,11 @@ IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_Unity_RenderPipelines_Core_Runtime_C
 IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_Unity_RenderPipelines_Core_Runtime_Shared_CodeGenModule;
 IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_Unity_RenderPipelines_GPUDriven_Runtime_CodeGenModule;
 IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_Unity_RenderPipelines_Universal_Runtime_CodeGenModule;
+IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_Unity_TextMeshPro_CodeGenModule;
 IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g___Generated_CodeGenModule;
 IL2CPP_EXTERN_C_CONST Il2CppCodeGenModule g_mscorlib_CodeGenModule;
 IL2CPP_EXTERN_C const Il2CppCodeGenModule* g_CodeGenModules[];
-const Il2CppCodeGenModule* g_CodeGenModules[52] = 
+const Il2CppCodeGenModule* g_CodeGenModules[53] = 
 {
 	(&g_AssemblyU2DCSharp_CodeGenModule),
 	(&g_Mono_Security_CodeGenModule),
@@ -120,6 +121,7 @@ const Il2CppCodeGenModule* g_CodeGenModules[52] =
 	(&g_Unity_RenderPipelines_Core_Runtime_Shared_CodeGenModule),
 	(&g_Unity_RenderPipelines_GPUDriven_Runtime_CodeGenModule),
 	(&g_Unity_RenderPipelines_Universal_Runtime_CodeGenModule),
+	(&g_Unity_TextMeshPro_CodeGenModule),
 	(&g___Generated_CodeGenModule),
 	(&g_mscorlib_CodeGenModule),
 };
@@ -128,20 +130,20 @@ const Il2CppCodeRegistration g_CodeRegistration =
 {
 	16,
 	g_ReversePInvokeWrapperPointers,
-	95295,
+	97763,
 	g_Il2CppGenericMethodPointers,
 	g_Il2CppGenericAdjustorThunks,
-	21298,
+	21721,
 	g_Il2CppInvokerPointers,
-	2734,
+	2807,
 	g_UnresolvedVirtualMethodPointers,
 	g_UnresolvedInstanceMethodPointers,
 	g_UnresolvedStaticMethodPointers,
-	737,
+	762,
 	g_Il2CppInteropData,
 	0,
 	NULL,
-	52,
+	53,
 	g_CodeGenModules,
 };
 IL2CPP_EXTERN_C_CONST Il2CppMetadataRegistration g_MetadataRegistration;

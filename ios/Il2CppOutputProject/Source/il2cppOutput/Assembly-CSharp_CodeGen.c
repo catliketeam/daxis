@@ -25,6 +25,7 @@ extern void GameManager3DTetris_get_GhostPiece_mA1C8A4114E95A699336BDCCA0D877CA1
 extern void GameManager3DTetris_LogGridState_m942A47637FA2123D6CFCC7CDD550F8A89C5D4E6D (void);
 extern void GameManager3DTetris_Start_m4AEC7023E5E9D9BEA912B1418AF90F0130B3074A (void);
 extern void GameManager3DTetris_Update_m3AE43A558602376D5A7A0943C51D92F9702EF3A1 (void);
+extern void GameManager3DTetris_IsPointerOverUIObject_m0EBD2B8B2CD44FB7538A4481ABE8B16C3FCCDC42 (void);
 extern void GameManager3DTetris_HandleInput_mA573C05CA79952E9471D9CD4EC440F0763C9E162 (void);
 extern void GameManager3DTetris_HandleSingleTap_m11C4A3C963FBD846B1D7B29DD47B4CDE67A7DD6F (void);
 extern void GameManager3DTetris_RotatePiece_mF6584C691F1795EE8DD1DAFB2C4958C33ADC1772 (void);
@@ -47,24 +48,27 @@ extern void GameManager3DTetris_CalculateGhostPosition_m7CB45AE5434A10FDC7535CAD
 extern void GameManager3DTetris_MakeGhost_m996E2F57A1DA89B4A26FF84A461EA73BFB31D456 (void);
 extern void GameManager3DTetris_SlamPiece_m1BBB321788A1E7A633AC29D40BB933A3C87D6BE1 (void);
 extern void GameManager3DTetris_SpawnNewPiece_m3930FC210EE14B36AF0AC78CB18D41A8E81F9DFE (void);
+extern void GameManager3DTetris_SwitchCameraLeft_m3ABB6EA2782EB4B30C64334C1B555C427E9ECE5B (void);
+extern void GameManager3DTetris_SwitchCameraRight_m6C97E7E877FC661673FDF79056598CF06991E3B8 (void);
+extern void GameManager3DTetris_SlamActivePiece_m6A9E46E7CDE5E4D5F1D4A2C4877582E952B534C8 (void);
 extern void GameManager3DTetris__ctor_m0EAF58555D1B93FB0E8E03C389E1CA2308AB71E5 (void);
-extern void U3CHandleSingleTapU3Ed__33__ctor_mA4B706D2D0B6F283DD5BE156EC52C8D4CBE90B2A (void);
-extern void U3CHandleSingleTapU3Ed__33_System_IDisposable_Dispose_mA66DC3C5F9ACEA4EDD79A07D8410FEB57A8DC371 (void);
-extern void U3CHandleSingleTapU3Ed__33_MoveNext_mC755ECF6E1D6B612C3F4898708991AB03F378157 (void);
-extern void U3CHandleSingleTapU3Ed__33_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m05EADAEE53C5F244B78ADE77ECAE84854BCD2E5E (void);
-extern void U3CHandleSingleTapU3Ed__33_System_Collections_IEnumerator_Reset_m1AFF5CE43C3399FBA739CF9AE915EE181C2670B5 (void);
-extern void U3CHandleSingleTapU3Ed__33_System_Collections_IEnumerator_get_Current_mD88CC2FF18C1C69D1A8D7B3D5C83D34AD4BF9B76 (void);
-extern void U3CProcessLockedBlocksU3Ed__43__ctor_m17E92B882C4950053F2E9A3D503E932079FFA986 (void);
-extern void U3CProcessLockedBlocksU3Ed__43_System_IDisposable_Dispose_mADFC92D4D1090CC1212406E01489A5BABCB2C34C (void);
-extern void U3CProcessLockedBlocksU3Ed__43_MoveNext_mB4D776BC798BC33960BAAF1CBC893956E740A295 (void);
-extern void U3CProcessLockedBlocksU3Ed__43_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m3A29B346159438390784B05B25F432A501E49656 (void);
-extern void U3CProcessLockedBlocksU3Ed__43_System_Collections_IEnumerator_Reset_m3EACF2C2ADF2C23637D7727CDA06EC959271CBF7 (void);
-extern void U3CProcessLockedBlocksU3Ed__43_System_Collections_IEnumerator_get_Current_m9DB5680F265F6754239D52B3097967FB3ED5A403 (void);
+extern void U3CHandleSingleTapU3Ed__32__ctor_m7FADD92CF489360501949F58374C73BBF9A6021B (void);
+extern void U3CHandleSingleTapU3Ed__32_System_IDisposable_Dispose_m5D09CC087FCDEF550B0F01AA35B012AA1A56C8DD (void);
+extern void U3CHandleSingleTapU3Ed__32_MoveNext_m120DF8E289504C9DCC25020514CC0533A9B403CB (void);
+extern void U3CHandleSingleTapU3Ed__32_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m96DB2CBC8CAD9D0ACC8A6F9F023444D6384020A4 (void);
+extern void U3CHandleSingleTapU3Ed__32_System_Collections_IEnumerator_Reset_m9D84C115BF8D7357CF4CB0D8C835D0E598237E8B (void);
+extern void U3CHandleSingleTapU3Ed__32_System_Collections_IEnumerator_get_Current_mCDA21B4E9983B6147A5F3B0F08AA30F045318911 (void);
+extern void U3CProcessLockedBlocksU3Ed__42__ctor_m823E9B9BEAEB4EB223813984278C8DD9059EF342 (void);
+extern void U3CProcessLockedBlocksU3Ed__42_System_IDisposable_Dispose_m84722AED7ACF853BDD137598BE500D4DE1604B44 (void);
+extern void U3CProcessLockedBlocksU3Ed__42_MoveNext_m65049A7285B1D4D37BF304FD90DF28FEB99EB67C (void);
+extern void U3CProcessLockedBlocksU3Ed__42_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_mC4C4665A0F5C2632B308C63850E9816BB0DC35AD (void);
+extern void U3CProcessLockedBlocksU3Ed__42_System_Collections_IEnumerator_Reset_m4551B121E8707522C345342D99929A19667FDF4A (void);
+extern void U3CProcessLockedBlocksU3Ed__42_System_Collections_IEnumerator_get_Current_mC63AC79C560FFCD8668BBF4759371CDDEF0E2D9A (void);
 extern void Readme__ctor_m69C325C4C171DCB0312B646A9034AA91EA8C39C6 (void);
 extern void Section__ctor_m5F732533E4DFC0167D965E5F5DB332E46055399B (void);
 extern void UnitySourceGeneratedAssemblyMonoScriptTypes_v1_Get_mBEB95BEB954BB63E9710BBC7AD5E78C4CB0A0033 (void);
 extern void UnitySourceGeneratedAssemblyMonoScriptTypes_v1__ctor_mE70FB23ACC1EA12ABC948AA22C2E78B2D0AA39B1 (void);
-static Il2CppMethodPointer s_methodPointers[57] = 
+static Il2CppMethodPointer s_methodPointers[61] = 
 {
 	CameraController_get_EffectiveRight_mAA8C7483944E2F07BD86DA28DE73465FA5082E83,
 	CameraController_Start_m8EAAC188934ECCBD009EC00751280DCFF4D96C71,
@@ -84,6 +88,7 @@ static Il2CppMethodPointer s_methodPointers[57] =
 	GameManager3DTetris_LogGridState_m942A47637FA2123D6CFCC7CDD550F8A89C5D4E6D,
 	GameManager3DTetris_Start_m4AEC7023E5E9D9BEA912B1418AF90F0130B3074A,
 	GameManager3DTetris_Update_m3AE43A558602376D5A7A0943C51D92F9702EF3A1,
+	GameManager3DTetris_IsPointerOverUIObject_m0EBD2B8B2CD44FB7538A4481ABE8B16C3FCCDC42,
 	GameManager3DTetris_HandleInput_mA573C05CA79952E9471D9CD4EC440F0763C9E162,
 	GameManager3DTetris_HandleSingleTap_m11C4A3C963FBD846B1D7B29DD47B4CDE67A7DD6F,
 	GameManager3DTetris_RotatePiece_mF6584C691F1795EE8DD1DAFB2C4958C33ADC1772,
@@ -106,89 +111,96 @@ static Il2CppMethodPointer s_methodPointers[57] =
 	GameManager3DTetris_MakeGhost_m996E2F57A1DA89B4A26FF84A461EA73BFB31D456,
 	GameManager3DTetris_SlamPiece_m1BBB321788A1E7A633AC29D40BB933A3C87D6BE1,
 	GameManager3DTetris_SpawnNewPiece_m3930FC210EE14B36AF0AC78CB18D41A8E81F9DFE,
+	GameManager3DTetris_SwitchCameraLeft_m3ABB6EA2782EB4B30C64334C1B555C427E9ECE5B,
+	GameManager3DTetris_SwitchCameraRight_m6C97E7E877FC661673FDF79056598CF06991E3B8,
+	GameManager3DTetris_SlamActivePiece_m6A9E46E7CDE5E4D5F1D4A2C4877582E952B534C8,
 	GameManager3DTetris__ctor_m0EAF58555D1B93FB0E8E03C389E1CA2308AB71E5,
-	U3CHandleSingleTapU3Ed__33__ctor_mA4B706D2D0B6F283DD5BE156EC52C8D4CBE90B2A,
-	U3CHandleSingleTapU3Ed__33_System_IDisposable_Dispose_mA66DC3C5F9ACEA4EDD79A07D8410FEB57A8DC371,
-	U3CHandleSingleTapU3Ed__33_MoveNext_mC755ECF6E1D6B612C3F4898708991AB03F378157,
-	U3CHandleSingleTapU3Ed__33_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m05EADAEE53C5F244B78ADE77ECAE84854BCD2E5E,
-	U3CHandleSingleTapU3Ed__33_System_Collections_IEnumerator_Reset_m1AFF5CE43C3399FBA739CF9AE915EE181C2670B5,
-	U3CHandleSingleTapU3Ed__33_System_Collections_IEnumerator_get_Current_mD88CC2FF18C1C69D1A8D7B3D5C83D34AD4BF9B76,
-	U3CProcessLockedBlocksU3Ed__43__ctor_m17E92B882C4950053F2E9A3D503E932079FFA986,
-	U3CProcessLockedBlocksU3Ed__43_System_IDisposable_Dispose_mADFC92D4D1090CC1212406E01489A5BABCB2C34C,
-	U3CProcessLockedBlocksU3Ed__43_MoveNext_mB4D776BC798BC33960BAAF1CBC893956E740A295,
-	U3CProcessLockedBlocksU3Ed__43_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m3A29B346159438390784B05B25F432A501E49656,
-	U3CProcessLockedBlocksU3Ed__43_System_Collections_IEnumerator_Reset_m3EACF2C2ADF2C23637D7727CDA06EC959271CBF7,
-	U3CProcessLockedBlocksU3Ed__43_System_Collections_IEnumerator_get_Current_m9DB5680F265F6754239D52B3097967FB3ED5A403,
+	U3CHandleSingleTapU3Ed__32__ctor_m7FADD92CF489360501949F58374C73BBF9A6021B,
+	U3CHandleSingleTapU3Ed__32_System_IDisposable_Dispose_m5D09CC087FCDEF550B0F01AA35B012AA1A56C8DD,
+	U3CHandleSingleTapU3Ed__32_MoveNext_m120DF8E289504C9DCC25020514CC0533A9B403CB,
+	U3CHandleSingleTapU3Ed__32_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_m96DB2CBC8CAD9D0ACC8A6F9F023444D6384020A4,
+	U3CHandleSingleTapU3Ed__32_System_Collections_IEnumerator_Reset_m9D84C115BF8D7357CF4CB0D8C835D0E598237E8B,
+	U3CHandleSingleTapU3Ed__32_System_Collections_IEnumerator_get_Current_mCDA21B4E9983B6147A5F3B0F08AA30F045318911,
+	U3CProcessLockedBlocksU3Ed__42__ctor_m823E9B9BEAEB4EB223813984278C8DD9059EF342,
+	U3CProcessLockedBlocksU3Ed__42_System_IDisposable_Dispose_m84722AED7ACF853BDD137598BE500D4DE1604B44,
+	U3CProcessLockedBlocksU3Ed__42_MoveNext_m65049A7285B1D4D37BF304FD90DF28FEB99EB67C,
+	U3CProcessLockedBlocksU3Ed__42_System_Collections_Generic_IEnumeratorU3CSystem_ObjectU3E_get_Current_mC4C4665A0F5C2632B308C63850E9816BB0DC35AD,
+	U3CProcessLockedBlocksU3Ed__42_System_Collections_IEnumerator_Reset_m4551B121E8707522C345342D99929A19667FDF4A,
+	U3CProcessLockedBlocksU3Ed__42_System_Collections_IEnumerator_get_Current_mC63AC79C560FFCD8668BBF4759371CDDEF0E2D9A,
 	Readme__ctor_m69C325C4C171DCB0312B646A9034AA91EA8C39C6,
 	Section__ctor_m5F732533E4DFC0167D965E5F5DB332E46055399B,
 	UnitySourceGeneratedAssemblyMonoScriptTypes_v1_Get_mBEB95BEB954BB63E9710BBC7AD5E78C4CB0A0033,
 	UnitySourceGeneratedAssemblyMonoScriptTypes_v1__ctor_mE70FB23ACC1EA12ABC948AA22C2E78B2D0AA39B1,
 };
-static const int32_t s_InvokerIndices[57] = 
+static const int32_t s_InvokerIndices[61] = 
 {
-	12122,
-	12132,
-	12132,
-	9265,
-	12132,
-	3557,
-	12132,
-	12122,
-	9338,
-	12132,
-	12132,
-	11911,
-	12122,
-	11911,
-	11959,
-	12132,
-	12132,
-	12132,
-	12132,
-	11959,
-	12132,
-	7991,
-	9338,
-	12132,
-	12132,
-	6458,
-	8147,
-	8144,
-	12132,
-	11959,
-	12132,
-	11796,
-	11796,
-	2827,
-	2827,
-	12132,
-	8141,
-	9184,
-	12132,
-	12132,
-	12132,
-	9136,
-	12132,
-	11796,
-	11959,
-	12132,
-	11959,
-	9136,
-	12132,
-	11796,
-	11959,
-	12132,
-	11959,
-	12132,
-	12132,
-	21285,
-	12132,
+	12492,
+	12503,
+	12503,
+	9552,
+	12503,
+	3643,
+	12503,
+	12492,
+	9634,
+	12503,
+	12503,
+	12263,
+	12492,
+	12263,
+	12319,
+	12503,
+	12503,
+	12503,
+	12143,
+	12503,
+	12319,
+	12503,
+	8233,
+	9634,
+	12503,
+	12503,
+	6633,
+	8400,
+	8397,
+	12503,
+	12319,
+	12503,
+	12143,
+	12143,
+	2890,
+	2890,
+	12503,
+	8394,
+	9470,
+	12503,
+	12503,
+	12503,
+	12503,
+	12503,
+	12503,
+	9414,
+	12503,
+	12143,
+	12319,
+	12503,
+	12319,
+	9414,
+	12503,
+	12143,
+	12319,
+	12503,
+	12319,
+	12503,
+	12503,
+	21707,
+	12503,
 };
 IL2CPP_EXTERN_C const Il2CppCodeGenModule g_AssemblyU2DCSharp_CodeGenModule;
 const Il2CppCodeGenModule g_AssemblyU2DCSharp_CodeGenModule = 
 {
 	"Assembly-CSharp.dll",
-	57,
+	61,
 	s_methodPointers,
 	0,
 	NULL,
